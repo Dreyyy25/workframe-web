@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Account settings · Workframe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/styles.css" />
+  <script>(function(){try{var t=localStorage.getItem('wf-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+</head>
+<body data-base="../" data-shell="marketing" data-auth="seeker" data-active="settings">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div id="shell-top"></div>
+  <div id="shell-side"></div>
+  <main id="main">
+
+    <div class="container section">
+
+      <div style="margin-bottom:var(--space-8);max-width:760px">
+        <h1 style="margin:0">Account settings</h1>
+        <p class="muted" style="margin:8px 0 0">Manage your personal details and sign-in credentials.</p>
+      </div>
+
+      <!-- PROFILE -->
+      <section class="card" style="max-width:760px;margin-bottom:var(--space-6)">
+        <h2 style="margin-top:0">Profile</h2>
+        <p class="muted" style="margin:0 0 var(--space-6)">Update the contact details shown to companies you apply to.</p>
+
+        <form id="profile-form" novalidate>
+          <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+            <div class="field">
+              <label class="field__label" for="email">Email <span class="req">*</span></label>
+              <input class="input" type="email" id="email" name="email" autocomplete="email" />
+            </div>
+            <div class="field">
+              <label class="field__label" for="contact">Contact number</label>
+              <input class="input" type="tel" id="contact" name="contact" autocomplete="tel" />
+            </div>
+            <div class="field">
+              <label class="field__label" for="dob">Date of birth</label>
+              <input class="input" type="date" id="dob" name="dob" />
+            </div>
+            <div class="field">
+              <label class="field__label" for="sex">Sex</label>
+              <select class="select" id="sex" name="sex"></select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="photo">Profile photo URL</label>
+            <div class="cluster" style="flex-wrap:nowrap;gap:var(--space-2)">
+              <input class="input" type="text" id="photo" name="photo" placeholder="https://…/photo.jpg" style="flex:1" />
+              <button class="btn btn--ghost btn--sm" type="button" id="upload-btn" style="white-space:nowrap">Upload</button>
+            </div>
+            <div class="field__hint">Paste an image link, or click Upload to attach a new photo.</div>
+          </div>
+
+          <div class="cluster" style="justify-content:flex-end;margin-top:var(--space-4)">
+            <button class="btn btn--primary" type="submit">Save profile</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- PASSWORD -->
+      <section class="card" style="max-width:760px">
+        <h2 style="margin-top:0">Password</h2>
+        <p class="muted" style="margin:0 0 var(--space-6)">Choose a strong password you do not use elsewhere.</p>
+
+        <form id="password-form" novalidate>
+          <div class="field">
+            <label class="field__label" for="current-pw">Current password <span class="req">*</span></label>
+            <div class="cluster" style="flex-wrap:nowrap;gap:var(--space-2)">
+              <input class="input" type="password" id="current-pw" name="current" autocomplete="current-password" style="flex:1" />
+              <button class="btn btn--ghost btn--sm" type="button" data-toggle="current-pw" aria-pressed="false" style="white-space:nowrap;width:72px;justify-content:center">Show</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="new-pw">New password <span class="req">*</span></label>
+            <div class="cluster" style="flex-wrap:nowrap;gap:var(--space-2)">
+              <input class="input" type="password" id="new-pw" name="new" autocomplete="new-password" aria-describedby="new-pw-hint new-pw-err" style="flex:1" />
+              <button class="btn btn--ghost btn--sm" type="button" data-toggle="new-pw" aria-pressed="false" style="white-space:nowrap;width:72px;justify-content:center">Show</button>
+            </div>
+            <div class="field__hint" id="new-pw-hint">At least 10 characters</div>
+            <div class="field__error" id="new-pw-err" hidden></div>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="confirm-pw">Confirm new password <span class="req">*</span></label>
+            <div class="cluster" style="flex-wrap:nowrap;gap:var(--space-2)">
+              <input class="input" type="password" id="confirm-pw" name="confirm" autocomplete="new-password" aria-describedby="confirm-pw-err" style="flex:1" />
+              <button class="btn btn--ghost btn--sm" type="button" data-toggle="confirm-pw" aria-pressed="false" style="white-space:nowrap;width:72px;justify-content:center">Show</button>
+            </div>
+            <div class="field__error" id="confirm-pw-err" hidden></div>
+          </div>
+
+          <div class="cluster" style="justify-content:flex-end;margin-top:var(--space-4)">
+            <button class="btn btn--primary" type="submit">Update password</button>
+          </div>
+        </form>
+      </section>
+
+    </div>
+
+  </main>
+  <div id="shell-foot"></div>
+  <div id="toast-root" aria-live="polite"></div>
+  <div id="modal-root"></div>
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var s = WF.seeker;
+
+      // Prefill profile fields from trusted WF data.
+      document.getElementById('email').value = s.email || '';
+      document.getElementById('contact').value = s.contact || '';
+      document.getElementById('dob').value = s.dob || '';
+      document.getElementById('photo').value = s.photo || '';
+
+      // Sex select options from enums.
+      var sexSel = document.getElementById('sex');
+      sexSel.innerHTML = WF.enums.sex.map(function (v) {
+        return '<option value="' + v + '"' + (v === s.sex ? ' selected' : '') + '>' + v + '</option>';
+      }).join('');
+
+      // Faked photo upload.
+      document.getElementById('upload-btn').addEventListener('click', function () {
+        WFApp.toast('Photo updated');
+      });
+
+      // Save profile (no backend — just confirm).
+      document.getElementById('profile-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        WFApp.toast('Profile saved');
+      });
+
+      // Show/Hide password toggles.
+      [].forEach.call(document.querySelectorAll('[data-toggle]'), function (btn) {
+        btn.addEventListener('click', function () {
+          var input = document.getElementById(btn.getAttribute('data-toggle'));
+          var show = input.type === 'password';
+          input.type = show ? 'text' : 'password';
+          btn.textContent = show ? 'Hide' : 'Show';
+          btn.setAttribute('aria-pressed', show ? 'true' : 'false');
+        });
+      });
+
+      function setError(id, msg) {
+        var el = document.getElementById(id);
+        el.innerHTML = WFApp.icon('x') + '<span>' + WFApp.escapeHtml(msg) + '</span>';
+        el.hidden = false;
+      }
+      function clearError(id) {
+        var el = document.getElementById(id);
+        el.hidden = true;
+        el.innerHTML = '';
+      }
+
+      // Update password with inline validation.
+      document.getElementById('password-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var newPw = document.getElementById('new-pw').value;
+        var confirmPw = document.getElementById('confirm-pw').value;
+        clearError('new-pw-err');
+        clearError('confirm-pw-err');
+
+        var ok = true;
+        if (newPw.length < 10) {
+          setError('new-pw-err', 'Password must be at least 10 characters.');
+          document.getElementById('new-pw').focus();
+          ok = false;
+        }
+        if (ok && newPw !== confirmPw) {
+          setError('confirm-pw-err', 'Passwords do not match.');
+          document.getElementById('confirm-pw').focus();
+          ok = false;
+        }
+        if (!ok) return;
+
+        WFApp.toast('Password updated');
+        this.reset();
+      });
+    });
+  </script>
+</body>
+</html>

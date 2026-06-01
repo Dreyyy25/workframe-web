@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Workframe — Post a job</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/styles.css" />
+  <script>(function(){try{var t=localStorage.getItem('wf-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+</head>
+<body data-base="../" data-shell="console" data-auth="company" data-active="post-job">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="app-console">
+    <div id="shell-side"></div>
+    <div>
+      <div id="console-topbar-mount"></div>
+      <div class="console-main">
+        <main id="main">
+
+          <div class="breadcrumb"><a href="jobs.html">Job Posts</a><span aria-hidden="true">/</span><span id="crumb-current">Post a job</span></div>
+
+          <h1 id="page-title">Post a job</h1>
+          <p class="muted" id="page-sub" style="max-width:560px;margin-top:-4px">Describe the role, set the compensation, and list the skills you are hiring for. You can save a draft and publish later.</p>
+
+          <form class="card" id="job-form" novalidate style="max-width:760px;margin-top:var(--space-6)">
+
+            <div class="field">
+              <label class="field__label" for="title">Job title <span class="req">*</span></label>
+              <input class="input" type="text" id="title" name="title" placeholder="Senior Frontend Engineer" />
+              <div class="field__error" id="title-err" hidden></div>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="description">Description <span class="req">*</span></label>
+              <textarea class="textarea" id="description" name="description" placeholder="What will this person own? What does success look like in the first 90 days?"></textarea>
+              <div class="field__error" id="description-err" hidden></div>
+            </div>
+
+            <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--space-4)">
+              <div class="field" style="margin-bottom:0">
+                <label class="field__label" for="type">Job type</label>
+                <select class="select" id="type" name="type"></select>
+              </div>
+              <div class="field" style="margin-bottom:0">
+                <label class="field__label" for="deadline">Application deadline</label>
+                <input class="input" type="date" id="deadline" name="deadline" />
+              </div>
+            </div>
+
+            <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--space-4);margin-top:var(--space-4)">
+              <div class="field" style="margin-bottom:0">
+                <label class="field__label" for="city">City</label>
+                <input class="input" type="text" id="city" name="city" placeholder="Remote" />
+              </div>
+              <div class="field" style="margin-bottom:0">
+                <label class="field__label" for="country">Country</label>
+                <input class="input" type="text" id="country" name="country" placeholder="United States" />
+              </div>
+            </div>
+
+            <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--space-4);margin-top:var(--space-4)">
+              <div class="field" style="margin-bottom:0">
+                <label class="field__label" for="salary-min">Salary min</label>
+                <input class="input" type="number" id="salary-min" name="salaryMin" min="0" placeholder="120000" />
+              </div>
+              <div class="field" style="margin-bottom:0">
+                <label class="field__label" for="salary-max">Salary max</label>
+                <input class="input" type="number" id="salary-max" name="salaryMax" min="0" placeholder="150000" />
+              </div>
+              <div class="field" style="margin-bottom:0">
+                <label class="field__label" for="salary-type">Salary type</label>
+                <select class="select" id="salary-type" name="salaryType"></select>
+              </div>
+            </div>
+
+            <hr style="border:none;border-top:2px solid var(--line-soft);margin:var(--space-8) 0 var(--space-6)" />
+
+            <div class="section-head" style="margin-bottom:var(--space-4)">
+              <h2 style="font-size:1.25rem">Required skills</h2>
+              <button class="btn btn--ghost btn--sm" type="button" id="add-skill">Add skill</button>
+            </div>
+            <p class="field__hint" style="margin-top:0;margin-bottom:var(--space-4)">List the skills candidates need, the expected level, and whether each is mandatory.</p>
+            <div id="skills-rows" class="stack"></div>
+
+            <hr style="border:none;border-top:2px solid var(--line-soft);margin:var(--space-8) 0 var(--space-6)" />
+
+            <div class="cluster" style="justify-content:flex-end">
+              <button class="btn btn--ghost" type="button" id="save-draft">Save draft</button>
+              <button class="btn btn--secondary" type="button" id="cancel">Cancel</button>
+              <button class="btn btn--primary" type="submit" id="publish">Publish job</button>
+            </div>
+
+          </form>
+
+        </main>
+      </div>
+    </div>
+  </div>
+  <div id="toast-root" aria-live="polite"></div>
+  <div id="modal-root"></div>
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      var editId = WFApp.qs('id');
+      var job = editId ? WFApp.job(editId) : null;
+
+      // Edit-mode titles
+      if(job){
+        document.title = 'Workframe — Edit job';
+        document.getElementById('page-title').textContent = 'Edit job';
+        document.getElementById('crumb-current').textContent = 'Edit job';
+        document.getElementById('page-sub').textContent = 'Update the role details, compensation, and required skills, then re-publish.';
+        document.getElementById('publish').textContent = 'Save changes';
+      }
+
+      // Populate selects from trusted WF data
+      var typeSel = document.getElementById('type');
+      WF.jobTypes.forEach(function(t){
+        var o = document.createElement('option'); o.value = t; o.textContent = t; typeSel.appendChild(o);
+      });
+      var salTypeSel = document.getElementById('salary-type');
+      WF.enums.salaryType.forEach(function(t){
+        var o = document.createElement('option'); o.value = t;
+        o.textContent = t.charAt(0).toUpperCase() + t.slice(1); salTypeSel.appendChild(o);
+      });
+
+      // ---- Required skills rows ----
+      var rows = document.getElementById('skills-rows');
+      var rowSeq = 0;
+      function levelOptions(selected){
+        return WF.enums.skillLevel.map(function(l){
+          return '<option value="' + l + '"' + (l === selected ? ' selected' : '') + '>' + l + '</option>';
+        }).join('');
+      }
+      function addSkillRow(skill){
+        skill = skill || {};
+        var i = ++rowSeq;
+        var wrap = document.createElement('div');
+        wrap.className = 'cluster';
+        wrap.style.alignItems = 'flex-end';
+        wrap.style.gap = 'var(--space-3)';
+        wrap.setAttribute('data-skill-row', '');
+        // skill.name is trusted WF data when prefilled (from WF.jobs); escape defensively as it
+        // becomes a value attribute, and any user-typed value goes through DOM .value (no innerHTML).
+        var nameVal = skill.name ? WFApp.escapeHtml(skill.name) : '';
+        wrap.innerHTML =
+          '<div class="field" style="margin-bottom:0;flex:1 1 200px;min-width:160px">' +
+            '<label class="field__label" for="skill-name-' + i + '">Skill name</label>' +
+            '<input class="input" type="text" id="skill-name-' + i + '" name="skillName" placeholder="React" value="' + nameVal + '" />' +
+          '</div>' +
+          '<div class="field" style="margin-bottom:0;flex:0 1 160px;min-width:130px">' +
+            '<label class="field__label" for="skill-level-' + i + '">Level</label>' +
+            '<select class="select" id="skill-level-' + i + '" name="skillLevel">' + levelOptions(skill.level) + '</select>' +
+          '</div>' +
+          '<label class="cluster" style="gap:6px;margin-bottom:11px;font-family:var(--font-display);font-weight:600;font-size:14px;cursor:pointer">' +
+            '<input type="checkbox" name="skillRequired"' + (skill.required ? ' checked' : '') + ' style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer" /> Required' +
+          '</label>' +
+          '<button class="btn btn--ghost btn--sm" type="button" data-remove-skill aria-label="Remove skill" style="margin-bottom:4px"></button>';
+        wrap.querySelector('[data-remove-skill]').innerHTML = WFApp.icon('trash');
+        wrap.querySelector('[data-remove-skill]').addEventListener('click', function(){ wrap.remove(); });
+        rows.appendChild(wrap);
+        return wrap;
+      }
+      document.getElementById('add-skill').innerHTML = WFApp.icon('plus') + 'Add skill';
+      document.getElementById('add-skill').addEventListener('click', function(){
+        var r = addSkillRow();
+        var inp = r.querySelector('input[name="skillName"]');
+        if(inp) inp.focus();
+      });
+
+      // ---- Prefill (edit mode) ----
+      if(job){
+        document.getElementById('title').value = job.title || '';
+        document.getElementById('description').value = job.description || '';
+        if(job.type) typeSel.value = job.type;
+        document.getElementById('city').value = job.city || '';
+        document.getElementById('country').value = (job.country && job.country !== '—') ? job.country : '';
+        if(job.salaryMin != null) document.getElementById('salary-min').value = job.salaryMin;
+        if(job.salaryMax != null) document.getElementById('salary-max').value = job.salaryMax;
+        if(job.salaryType) salTypeSel.value = job.salaryType;
+        document.getElementById('deadline').value = job.deadline || '';
+        (job.skills || []).forEach(function(s){ addSkillRow(s); });
+      }
+      if(!rows.children.length){ addSkillRow(); }
+
+      // ---- Validation + actions ----
+      function setError(id, msg){
+        var err = document.getElementById(id + '-err');
+        var input = document.getElementById(id);
+        if(msg){
+          err.innerHTML = WFApp.icon('x') + WFApp.escapeHtml(msg);
+          err.hidden = false;
+          if(input) input.setAttribute('aria-invalid', 'true');
+        } else {
+          err.hidden = true;
+          if(input) input.setAttribute('aria-invalid', 'false');
+        }
+      }
+
+      document.getElementById('save-draft').addEventListener('click', function(){
+        WFApp.toast('Draft saved');
+      });
+      document.getElementById('cancel').addEventListener('click', function(){
+        location.href = 'jobs.html';
+      });
+
+      document.getElementById('job-form').addEventListener('submit', function(e){
+        e.preventDefault();
+        var ok = true, firstInvalid = null;
+
+        var title = document.getElementById('title');
+        if(!title.value.trim()){ setError('title', 'Please enter a job title.'); ok = false; firstInvalid = firstInvalid || title; }
+        else setError('title', null);
+
+        var desc = document.getElementById('description');
+        if(!desc.value.trim()){ setError('description', 'Please add a job description.'); ok = false; firstInvalid = firstInvalid || desc; }
+        else setError('description', null);
+
+        if(!ok){ if(firstInvalid) firstInvalid.focus(); return; }
+
+        WFApp.toast('Job published');
+        setTimeout(function(){ location.href = 'jobs.html'; }, 600);
+      });
+    });
+  </script>
+</body>
+</html>

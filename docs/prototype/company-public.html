@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Company — Workframe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <script>(function(){try{var t=localStorage.getItem('wf-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+</head>
+<body data-shell="marketing" data-auth="guest" data-active="companies">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div id="shell-top"></div>
+  <div id="shell-side"></div>
+  <main id="main">
+
+    <div class="container section">
+      <div id="co-root"></div>
+    </div>
+
+  </main>
+  <div id="shell-foot"></div>
+  <div id="toast-root" aria-live="polite"></div>
+  <div id="modal-root"></div>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var root = document.getElementById('co-root');
+      var id = WFApp.qs('id');
+      var company = id ? WFApp.company(id) : null;
+
+      if (!company) {
+        root.innerHTML =
+          '<div class="empty">' + WFApp.icon('building') +
+          '<h1>Company not found</h1>' +
+          '<p class="muted">We couldn\'t find the company you\'re looking for. It may have been removed.</p>' +
+          '<a class="btn btn--primary" href="companies.html">' + WFApp.icon('grid') + 'Browse all companies</a>' +
+          '</div>';
+        return;
+      }
+
+      document.title = company.name + ' — Workframe';
+
+      var statusLabel = company.status.charAt(0).toUpperCase() + company.status.slice(1);
+
+      // ----- HEADER -----
+      var header =
+        '<div class="cluster" style="gap:var(--space-6);align-items:flex-start">' +
+          '<span class="logo-square" style="width:64px;height:64px;font-size:22px" aria-hidden="true">' + company.logo + '</span>' +
+          '<div style="flex:1;min-width:240px">' +
+            '<h1 style="margin-bottom:8px">' + company.name + '</h1>' +
+            '<div class="cluster" style="gap:var(--space-2)">' +
+              '<span class="chip">' + WFApp.icon('grid') + company.stream + '</span>' +
+              '<span class="muted" style="display:inline-flex;align-items:center;gap:6px;font-size:14px">' +
+                WFApp.icon('building') + statusLabel + ' company' +
+              '</span>' +
+            '</div>' +
+          '</div>' +
+          '<a class="btn btn--primary" href="https://' + WFApp.escapeHtml(company.website) + '" target="_blank" rel="noopener">' +
+            WFApp.icon('globe') + company.website +
+          '</a>' +
+        '</div>';
+
+      // ----- DESCRIPTION -----
+      var about =
+        '<p class="muted" style="max-width:680px;font-size:18px;margin-top:var(--space-6)">' +
+          company.description +
+        '</p>';
+
+      // ----- WORKPLACE GALLERY -----
+      var gallery = '';
+      if (company.images && company.images.length) {
+        gallery =
+          '<section style="margin-top:var(--space-12)">' +
+            '<h3>Workplace</h3>' +
+            '<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">' +
+              company.images.map(function (src) {
+                return '<img src="' + WFApp.escapeHtml(src) + '" alt="' + company.name +
+                  ' workplace" loading="lazy" style="border:2px solid var(--line);border-radius:4px;width:100%;height:200px;object-fit:cover" />';
+              }).join('') +
+            '</div>' +
+          '</section>';
+      }
+
+      // ----- OPEN ROLES -----
+      var jobs = WF.jobs.filter(function (j) { return j.companyId === id; });
+      var rolesInner;
+      if (jobs.length) {
+        rolesInner =
+          '<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">' +
+            jobs.map(function (j) {
+              return '<a class="job-card" href="job-detail.html?id=' + j.id + '">' +
+                '<div class="cluster" style="justify-content:space-between"><span class="chip">' + j.type + '</span><span class="badge">' + WFApp.icon('pin') + j.city + '</span></div>' +
+                '<h3 class="job-card__title" style="margin-top:12px">' + j.title + '</h3>' +
+                '<div class="job-card__meta">' + company.name + '</div>' +
+                '<div class="cluster" style="justify-content:space-between;margin-top:16px"><span class="job-card__salary">' + WFApp.money(j.salaryMin, j.salaryMax, j.salaryType) + '</span><span class="btn btn--secondary btn--sm">View</span></div>' +
+              '</a>';
+            }).join('') +
+          '</div>';
+      } else {
+        rolesInner =
+          '<div class="empty">' + WFApp.icon('briefcase') +
+          '<h3>No open roles right now</h3>' +
+          '<p class="muted">' + company.name + ' isn\'t hiring at the moment. Check back soon.</p>' +
+          '</div>';
+      }
+
+      var roles =
+        '<section style="margin-top:var(--space-12)">' +
+          '<div class="section-head"><h2>Open roles at ' + company.name + '</h2></div>' +
+          rolesInner +
+        '</section>';
+
+      root.innerHTML = header + about + gallery + roles;
+    });
+  </script>
+</body>
+</html>

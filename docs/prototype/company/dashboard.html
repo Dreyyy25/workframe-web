@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard — Workframe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/styles.css" />
+  <script>(function(){try{var t=localStorage.getItem('wf-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+</head>
+<body data-base="../" data-shell="console" data-auth="company" data-active="dashboard">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="app-console">
+    <div id="shell-side"></div>
+    <div>
+      <div id="console-topbar-mount"></div>
+      <div class="console-main">
+        <main id="main">
+
+          <div class="section-head">
+            <h1>Dashboard</h1>
+            <a class="btn btn--primary" href="post-job.html">Post a Job</a>
+          </div>
+
+          <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))" id="stat-grid"></div>
+
+          <div class="section-head" style="margin-top:var(--space-8)">
+            <h2>Recent applicants</h2>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th scope="col">Candidate</th>
+                  <th scope="col">Role applied</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" aria-label="Actions"></th>
+                </tr>
+              </thead>
+              <tbody id="applicant-rows"></tbody>
+            </table>
+          </div>
+
+        </main>
+      </div>
+    </div>
+  </div>
+  <div id="toast-root" aria-live="polite"></div>
+  <div id="modal-root"></div>
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded',function(){
+      var COMPANY_ID='c1';
+
+      // Jobs belonging to this company.
+      var companyJobs=WF.jobs.filter(function(j){ return j.companyId===COMPANY_ID; });
+      var companyJobIds={};
+      companyJobs.forEach(function(j){ companyJobIds[j.id]=true; });
+
+      // Applicants whose job belongs to this company.
+      var ourApplicants=WFApp.state.applicants.filter(function(p){ return companyJobIds[p.jobId]; });
+      var newThisWeek=ourApplicants.filter(function(p){ return p.applied>='2026-05-25'; });
+
+      var stats=[
+        {label:'Active posts',num:companyJobs.length,icon:'briefcase'},
+        {label:'Total applicants',num:ourApplicants.length,icon:'inbox'},
+        {label:'New this week',num:newThisWeek.length,icon:'clock'}
+      ];
+      document.getElementById('stat-grid').innerHTML=stats.map(function(s){
+        return '<div class="stat-card">'+
+          '<div class="cluster" style="justify-content:space-between;align-items:start">'+
+            '<div><div class="stat-card__num">'+s.num+'</div>'+
+            '<div class="stat-card__label">'+s.label+'</div></div>'+
+            '<span class="badge">'+WFApp.icon(s.icon)+'</span>'+
+          '</div>'+
+        '</div>';
+      }).join('');
+
+      var rowsEl=document.getElementById('applicant-rows');
+      if(!ourApplicants.length){
+        rowsEl.innerHTML='<tr><td colspan="4" class="muted">No applicants yet. Once candidates apply to your roles, they will appear here.</td></tr>';
+        return;
+      }
+      rowsEl.innerHTML=ourApplicants.map(function(p){
+        var job=WFApp.job(p.jobId);
+        return '<tr>'+
+          '<td><div style="font-family:var(--font-display);font-weight:700">'+WFApp.escapeHtml(p.name)+'</div>'+
+            '<div class="muted">'+WFApp.escapeHtml(p.title)+'</div></td>'+
+          '<td>'+(job?job.title:'—')+'</td>'+
+          '<td>'+WFApp.statusBadge(p.status)+'</td>'+
+          '<td style="text-align:right"><a class="btn btn--ghost btn--sm" href="applicant-detail.html?id='+encodeURIComponent(p.id)+'">'+WFApp.icon('user')+'View</a></td>'+
+        '</tr>';
+      }).join('');
+    });
+  </script>
+</body>
+</html>

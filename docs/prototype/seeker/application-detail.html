@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Application — Workframe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/styles.css" />
+  <script>(function(){try{var t=localStorage.getItem('wf-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+</head>
+<body data-base="../" data-shell="marketing" data-auth="seeker" data-active="applications">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div id="shell-top"></div>
+  <div id="shell-side"></div>
+  <main id="main">
+
+    <div class="container section">
+      <div id="ad-root"></div>
+    </div>
+
+  </main>
+  <div id="shell-foot"></div>
+  <div id="toast-root" aria-live="polite"></div>
+  <div id="modal-root"></div>
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded',function(){
+      var root = document.getElementById('ad-root');
+      var id = WFApp.qs('id');
+      var app = (WFApp.state.applications||[]).filter(function(a){ return a.id===id; })[0];
+
+      if(!app){
+        root.innerHTML =
+          '<div class="empty">'+WFApp.icon('inbox')+
+          '<h1>Application not found</h1>'+
+          '<p class="muted">We couldn’t find that application. It may have been withdrawn or the link is out of date.</p>'+
+          '<div class="cluster" style="justify-content:center;margin-top:16px">'+
+            '<a class="btn btn--primary" href="applications.html">'+WFApp.icon('inbox')+'Back to my applications</a>'+
+          '</div></div>';
+        return;
+      }
+
+      var job = WFApp.job(app.jobId) || {};
+      var company = WFApp.company(job.companyId) || {};
+      var jobTitle = job.title || 'Role';
+
+      // Status helpers
+      var st = app.status;
+      var reviewedDone = (st==='reviewed' || st==='accepted' || st==='rejected');
+      var decisionDone = (st==='accepted' || st==='rejected');
+      var decisionLabel = st==='accepted' ? 'Decision — Accepted'
+                        : st==='rejected' ? 'Decision — Not selected'
+                        : 'Decision';
+
+      root.innerHTML =
+        '<nav class="breadcrumb" aria-label="Breadcrumb">'+
+          '<a href="applications.html">My applications</a>'+
+          WFApp.icon('chevron')+
+          '<span>'+WFApp.escapeHtml(jobTitle)+'</span>'+
+        '</nav>'+
+
+        '<header style="margin-bottom:var(--space-8)">'+
+          '<p class="muted" style="font-weight:600;letter-spacing:.04em;text-transform:uppercase;font-size:13px;margin:0 0 8px">Application detail</p>'+
+          '<h1 style="margin:0">'+WFApp.escapeHtml(jobTitle)+'</h1>'+
+        '</header>'+
+
+        '<div class="card">'+
+          '<div class="cluster" style="justify-content:space-between;align-items:flex-start">'+
+            '<div>'+
+              '<h2 style="margin:0 0 6px"><a href="../job-detail.html?id='+WFApp.escapeHtml(app.jobId)+'">'+WFApp.escapeHtml(jobTitle)+'</a></h2>'+
+              '<div class="cluster" style="gap:8px">'+
+                '<span class="badge">'+WFApp.icon('building')+WFApp.escapeHtml(company.name||'—')+'</span>'+
+                (job.city ? '<span class="badge">'+WFApp.icon('pin')+WFApp.escapeHtml(job.city)+'</span>' : '')+
+                (job.type ? '<span class="chip">'+WFApp.escapeHtml(job.type)+'</span>' : '')+
+              '</div>'+
+            '</div>'+
+            WFApp.statusBadge(st)+
+          '</div>'+
+          '<div class="cluster" style="justify-content:space-between;margin-top:16px;border-top:2px solid var(--line);padding-top:16px">'+
+            '<span class="job-card__salary" style="font-family:var(--font-display);font-weight:700">'+
+              (job.salaryMin!=null ? WFApp.money(job.salaryMin,job.salaryMax,job.salaryType) : 'Salary undisclosed')+
+            '</span>'+
+            '<a class="btn btn--secondary btn--sm" href="../job-detail.html?id='+WFApp.escapeHtml(app.jobId)+'">'+WFApp.icon('briefcase')+'View job</a>'+
+          '</div>'+
+        '</div>'+
+
+        '<h3 style="margin-top:var(--space-8)">Your cover letter</h3>'+
+        '<div class="card">'+
+          '<p style="margin:0;white-space:pre-wrap">'+WFApp.escapeHtml(app.cover||'')+'</p>'+
+        '</div>'+
+
+        '<h3 style="margin-top:var(--space-8)">Status</h3>'+
+        '<ul class="timeline">'+
+          '<li class="done">'+
+            '<div><strong>Applied</strong>'+
+            (app.applied ? '<div class="muted" style="font-size:13px">Submitted '+WFApp.escapeHtml(app.applied)+'</div>' : '')+
+            '</div>'+
+          '</li>'+
+          '<li'+(reviewedDone?' class="done"':'')+'>'+
+            '<div><strong>Reviewed</strong>'+
+            '<div class="muted" style="font-size:13px">'+(reviewedDone?'The employer has reviewed your application.':'Waiting on the employer to review.')+'</div>'+
+            '</div>'+
+          '</li>'+
+          '<li'+(decisionDone?' class="done"':'')+'>'+
+            '<div><strong>'+decisionLabel+'</strong>'+
+            '<div class="muted" style="font-size:13px">'+(decisionDone?(st==='accepted'?'Congratulations — the employer accepted your application.':'The employer did not move forward this time.'):'No decision has been made yet.')+'</div>'+
+            '</div>'+
+          '</li>'+
+        '</ul>';
+    });
+  </script>
+</body>
+</html>

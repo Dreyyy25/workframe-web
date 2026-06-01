@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Log in — Workframe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <script>(function(){try{var t=localStorage.getItem('wf-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+</head>
+<body data-shell="auth" data-auth="guest" data-active="">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div id="shell-top"></div>
+  <div id="shell-side"></div>
+  <main id="main">
+
+    <div class="auth-wrap">
+      <div class="card auth-card">
+        <a class="brand" href="index.html" style="margin-bottom:var(--space-6)"><span class="brand__mark"></span>WORKFRAME</a>
+
+        <h1 style="margin-top:0">Log in</h1>
+        <p class="muted" style="margin-top:0">Welcome back. Pick up your job search where you left off.</p>
+
+        <form id="login-form" novalidate>
+          <div class="field">
+            <label class="field__label" for="email">Email <span class="req">*</span></label>
+            <input class="input" type="email" id="email" name="email" autocomplete="email" placeholder="you@example.com" required />
+            <div class="field__error" id="email-err" hidden>x-icon Enter a valid email address.</div>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="pw">Password <span class="req">*</span></label>
+            <div class="cluster" style="flex-wrap:nowrap;gap:var(--space-2);align-items:stretch">
+              <input class="input" type="password" id="pw" name="password" autocomplete="current-password" placeholder="Your password" required style="flex:1" />
+              <button class="btn btn--ghost btn--sm" type="button" id="pw-toggle" aria-pressed="false" aria-controls="pw">Show</button>
+            </div>
+            <div class="field__error" id="pw-err" hidden>x-icon Enter your password.</div>
+          </div>
+
+          <button class="btn btn--primary btn--block" type="submit">Log in</button>
+        </form>
+
+        <p class="muted" style="text-align:center;font-size:14px;margin-bottom:0">New to Workframe? <a href="register.html">Create an account</a></p>
+
+        <div class="divider">or</div>
+
+        <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+          <button class="btn btn--secondary btn--block" type="button" onclick="location.href='seeker/dashboard.html'">Continue as demo Seeker</button>
+          <button class="btn btn--secondary btn--block" type="button" onclick="location.href='company/dashboard.html'">Continue as demo Company</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+  <div id="shell-foot"></div>
+  <div id="toast-root" aria-live="polite"></div>
+  <div id="modal-root"></div>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded',function(){
+      // Render SVG icons into the inline error messages (no emoji).
+      [].forEach.call(document.querySelectorAll('.field__error'),function(el){
+        el.innerHTML = WFApp.icon('x') + el.textContent.replace('x-icon','').trim();
+      });
+
+      // Password show/hide toggle.
+      var pw = document.getElementById('pw');
+      var toggle = document.getElementById('pw-toggle');
+      toggle.addEventListener('click',function(){
+        var show = pw.type === 'password';
+        pw.type = show ? 'text' : 'password';
+        toggle.setAttribute('aria-pressed', show ? 'true' : 'false');
+        toggle.textContent = show ? 'Hide' : 'Show';
+      });
+
+      // Form submit -> demo seeker dashboard.
+      document.getElementById('login-form').addEventListener('submit',function(e){
+        e.preventDefault();
+        location.href = 'seeker/dashboard.html';
+      });
+    });
+  </script>
+</body>
+</html>

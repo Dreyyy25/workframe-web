@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Job posts — Workframe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/styles.css" />
+  <script>(function(){try{var t=localStorage.getItem('wf-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+</head>
+<body data-base="../" data-shell="console" data-auth="company" data-active="posts">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="app-console">
+    <div id="shell-side"></div>
+    <div>
+      <div id="console-topbar-mount"></div>
+      <div class="console-main">
+        <main id="main">
+
+          <div class="section-head">
+            <div>
+              <h1>Job posts</h1>
+              <p class="muted" style="margin:0">Manage your live roles, review applicants, and open or close each posting.</p>
+            </div>
+            <a class="btn btn--primary" href="post-job.html">Post a Job</a>
+          </div>
+
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th scope="col">Title</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Applicants</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="jobs-tbody"></tbody>
+            </table>
+          </div>
+
+        </main>
+      </div>
+    </div>
+  </div>
+  <div id="toast-root" aria-live="polite"></div>
+  <div id="modal-root"></div>
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded',function(){
+      var COMPANY_ID = 'c1';
+      // In-memory open/closed state: true = published, false = closed. Resets on reload.
+      var openState = {};
+
+      var myJobs = WF.jobs.filter(function(j){ return j.companyId===COMPANY_ID; });
+      myJobs.forEach(function(j){ if(!(j.id in openState)) openState[j.id]=true; });
+
+      function applicantCount(jobId){
+        return WFApp.state.applicants.filter(function(p){ return p.jobId===jobId; }).length;
+      }
+
+      function statusCell(jobId){
+        var open = openState[jobId];
+        var cls = open ? 'badge--reviewed' : 'badge--withdrawn';
+        var icon = open ? WFApp.icon('check') : WFApp.icon('x');
+        var label = open ? 'Published' : 'Closed';
+        return '<span class="badge '+cls+'" data-status="'+jobId+'">'+icon+label+'</span>';
+      }
+
+      function toggleLabel(jobId){
+        return openState[jobId] ? 'Close' : 'Publish';
+      }
+
+      function render(){
+        var tbody = document.getElementById('jobs-tbody');
+        tbody.innerHTML = myJobs.map(function(j){
+          var count = applicantCount(j.id);
+          return '<tr>'+
+            '<td>'+
+              '<div style="font-family:var(--font-display);font-weight:700">'+j.title+'</div>'+
+              '<div class="muted" style="font-size:13px">'+WFApp.money(j.salaryMin,j.salaryMax,j.salaryType)+'</div>'+
+            '</td>'+
+            '<td><span class="chip">'+j.type+'</span></td>'+
+            '<td>'+
+              '<a href="applicants.html?job='+j.id+'" class="cluster" style="gap:6px;color:inherit;font-weight:600">'+
+                WFApp.icon('user')+count+
+              '</a>'+
+            '</td>'+
+            '<td>'+statusCell(j.id)+'</td>'+
+            '<td>'+
+              '<div class="cluster" style="gap:8px">'+
+                '<a class="btn btn--ghost btn--sm" href="post-job.html?id='+j.id+'">'+WFApp.icon('edit')+'Edit</a>'+
+                '<a class="btn btn--ghost btn--sm" href="applicants.html?job='+j.id+'">'+WFApp.icon('inbox')+'Applicants</a>'+
+                '<button class="btn btn--ghost btn--sm" data-toggle="'+j.id+'">'+toggleLabel(j.id)+'</button>'+
+              '</div>'+
+            '</td>'+
+          '</tr>';
+        }).join('');
+
+        [].forEach.call(tbody.querySelectorAll('[data-toggle]'),function(btn){
+          btn.addEventListener('click',function(){
+            var id = btn.getAttribute('data-toggle');
+            openState[id] = !openState[id];
+            var job = WFApp.job(id);
+            render();
+            WFApp.toast(openState[id]
+              ? '"'+job.title+'" is now published'
+              : '"'+job.title+'" has been closed');
+          });
+        });
+      }
+
+      render();
+    });
+  </script>
+</body>
+</html>

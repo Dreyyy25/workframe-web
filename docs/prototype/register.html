@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Workframe — Create your account</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <script>(function(){try{var t=localStorage.getItem('wf-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+</head>
+<body data-shell="auth" data-auth="guest" data-active="">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div id="shell-top"></div>
+  <div id="shell-side"></div>
+  <main id="main">
+
+    <div class="auth-wrap"><div class="container">
+      <div class="card auth-card">
+        <a class="brand" href="index.html" style="margin-bottom:var(--space-6)"><span class="brand__mark"></span>WORKFRAME</a>
+        <h1 style="font-size:clamp(1.75rem,4vw,2.25rem)">Create your account</h1>
+        <p class="muted" style="margin-top:-4px">Join Workframe to apply for roles or to start hiring.</p>
+
+        <div class="tabs" role="tablist" aria-label="Account type">
+          <button class="tab tab--active" type="button" role="tab" aria-selected="true" data-tab="seeker">Job Seeker</button>
+          <button class="tab" type="button" role="tab" aria-selected="false" data-tab="company">Company</button>
+        </div>
+
+        <form id="register-form" novalidate>
+          <div class="field">
+            <label class="field__label" for="email">Email <span class="req">*</span></label>
+            <input class="input" type="email" id="email" name="email" autocomplete="email" placeholder="you@example.com" required />
+            <div class="field__error" id="email-err" hidden>WFAPP_X_ICONPlease enter a valid email address.</div>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="password">Password <span class="req">*</span></label>
+            <input class="input" type="password" id="password" name="password" autocomplete="new-password" placeholder="Create a password" required />
+            <div class="field__hint">At least 10 characters</div>
+            <div class="field__error" id="password-err" hidden>WFAPP_X_ICONPassword must be at least 10 characters.</div>
+          </div>
+
+          <div data-tabpanel="seeker">
+            <div class="field">
+              <label class="field__label" for="first-name">First name <span class="req">*</span></label>
+              <input class="input" type="text" id="first-name" name="firstName" autocomplete="given-name" placeholder="Maya" />
+              <div class="field__error" id="first-name-err" hidden>WFAPP_X_ICONPlease enter your first name.</div>
+            </div>
+            <div class="field">
+              <label class="field__label" for="last-name">Last name <span class="req">*</span></label>
+              <input class="input" type="text" id="last-name" name="lastName" autocomplete="family-name" placeholder="Okafor" />
+              <div class="field__error" id="last-name-err" hidden>WFAPP_X_ICONPlease enter your last name.</div>
+            </div>
+          </div>
+
+          <div data-tabpanel="company" hidden>
+            <div class="field">
+              <label class="field__label" for="company-name">Company name <span class="req">*</span></label>
+              <input class="input" type="text" id="company-name" name="companyName" autocomplete="organization" placeholder="Northwind Labs" />
+              <div class="field__error" id="company-name-err" hidden>WFAPP_X_ICONPlease enter your company name.</div>
+            </div>
+            <div class="field">
+              <label class="field__label" for="business-stream">Business stream <span class="req">*</span></label>
+              <select class="select" id="business-stream" name="businessStream">
+                <option value="" selected disabled>Select a business stream…</option>
+              </select>
+            </div>
+          </div>
+
+          <button class="btn btn--primary btn--block" type="submit" id="submit">Create account</button>
+        </form>
+
+        <div class="divider">OR</div>
+        <p class="muted" style="text-align:center;margin:0">Already have an account? <a href="login.html">Log in</a></p>
+      </div>
+    </div></div>
+
+  </main>
+  <div id="shell-foot"></div>
+  <div id="toast-root" aria-live="polite"></div>
+  <div id="modal-root"></div>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      // Inject the SVG x-icon into the inline error rows (placeholder swap keeps markup readable).
+      [].forEach.call(document.querySelectorAll('.field__error'), function(el){
+        el.innerHTML = el.innerHTML.replace('WFAPP_X_ICON', WFApp.icon('x'));
+      });
+
+      // Populate business streams from trusted WF data.
+      var streamSel = document.getElementById('business-stream');
+      WF.businessStreams.forEach(function(s){
+        var opt = document.createElement('option');
+        opt.value = s; opt.textContent = s;
+        streamSel.appendChild(opt);
+      });
+
+      function activeRole(){
+        var t = document.querySelector('.tab.tab--active');
+        return t ? t.getAttribute('data-tab') : 'seeker';
+      }
+      function showError(id, show){
+        var err = document.getElementById(id + '-err');
+        var input = document.getElementById(id);
+        if(err) err.hidden = !show;
+        if(input) input.setAttribute('aria-invalid', show ? 'true' : 'false');
+      }
+
+      document.getElementById('register-form').addEventListener('submit', function(e){
+        e.preventDefault();
+        var role = activeRole();
+        var ok = true;
+        var firstInvalid = null;
+
+        // Shared validation
+        var email = document.getElementById('email');
+        var emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim());
+        showError('email', !emailOk);
+        if(!emailOk){ ok = false; firstInvalid = firstInvalid || email; }
+
+        var password = document.getElementById('password');
+        var passOk = password.value.length >= 10;
+        showError('password', !passOk);
+        if(!passOk){ ok = false; firstInvalid = firstInvalid || password; }
+
+        if(role === 'seeker'){
+          var fn = document.getElementById('first-name');
+          var fnOk = !!fn.value.trim();
+          showError('first-name', !fnOk);
+          if(!fnOk){ ok = false; firstInvalid = firstInvalid || fn; }
+
+          var ln = document.getElementById('last-name');
+          var lnOk = !!ln.value.trim();
+          showError('last-name', !lnOk);
+          if(!lnOk){ ok = false; firstInvalid = firstInvalid || ln; }
+        } else {
+          var cn = document.getElementById('company-name');
+          var cnOk = !!cn.value.trim();
+          showError('company-name', !cnOk);
+          if(!cnOk){ ok = false; firstInvalid = firstInvalid || cn; }
+
+          var streamOk = !!streamSel.value;
+          if(!streamOk){
+            ok = false;
+            firstInvalid = firstInvalid || streamSel;
+            streamSel.setAttribute('aria-invalid', 'true');
+          } else {
+            streamSel.setAttribute('aria-invalid', 'false');
+          }
+        }
+
+        if(!ok){
+          if(firstInvalid) firstInvalid.focus();
+          return;
+        }
+
+        WFApp.toast('Account created — welcome to Workframe');
+        location.href = role === 'company' ? 'company/dashboard.html' : 'seeker/dashboard.html';
+      });
+    });
+  </script>
+</body>
+</html>

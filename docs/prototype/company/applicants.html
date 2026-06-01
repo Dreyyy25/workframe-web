@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Applicants — Workframe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/styles.css" />
+  <script>(function(){try{var t=localStorage.getItem('wf-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+</head>
+<body data-base="../" data-shell="console" data-auth="company" data-active="applicants">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="app-console">
+    <div id="shell-side"></div>
+    <div>
+      <div id="console-topbar-mount"></div>
+      <div class="console-main">
+        <main id="main">
+
+          <div class="section-head">
+            <div>
+              <h1>Applicants</h1>
+              <p class="muted" style="margin:0">Review and respond to people who applied to your roles.</p>
+            </div>
+          </div>
+
+          <div class="cluster" style="margin-bottom:var(--space-6)">
+            <label class="field__label" for="job-filter" style="margin:0">Filter by role</label>
+            <select class="select" id="job-filter" style="width:auto;min-width:220px"></select>
+          </div>
+
+          <div id="app-rows" class="stack"></div>
+
+        </main>
+      </div>
+    </div>
+  </div>
+  <div id="toast-root" aria-live="polite"></div>
+  <div id="modal-root"></div>
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var COMPANY_ID = (WF.companyAccount && WF.companyAccount.id) || 'c1';
+      // Jobs that belong to this company
+      var companyJobs = WF.jobs.filter(function (j) { return j.companyId === COMPANY_ID; });
+      var companyJobIds = companyJobs.map(function (j) { return j.id; });
+
+      var filterEl = document.getElementById('job-filter');
+      var rowsEl = document.getElementById('app-rows');
+
+      // Build filter options: All roles + each company job
+      var opts = '<option value="">All roles</option>' + companyJobs.map(function (j) {
+        return '<option value="' + j.id + '">' + WFApp.escapeHtml(j.title) + '</option>';
+      }).join('');
+      filterEl.innerHTML = opts;
+
+      // Preselect from ?job= if it is one of this company's jobs
+      var preset = WFApp.qs('job');
+      if (preset && companyJobIds.indexOf(preset) !== -1) { filterEl.value = preset; }
+
+      function render() {
+        var selected = filterEl.value;
+        var list = WFApp.state.applicants.filter(function (p) {
+          // only applicants to this company's jobs
+          if (companyJobIds.indexOf(p.jobId) === -1) { return false; }
+          return selected ? p.jobId === selected : true;
+        });
+
+        if (!list.length) {
+          rowsEl.innerHTML =
+            '<div class="empty">' + WFApp.icon('inbox') +
+            '<h2 style="margin:0 0 6px">No applicants yet</h2>' +
+            '<p class="muted" style="margin:0">' +
+              (selected ? 'No one has applied to this role yet.' : 'When candidates apply to your roles, they will show up here.') +
+            '</p></div>';
+          return;
+        }
+
+        rowsEl.innerHTML = list.map(function (p) {
+          var job = WFApp.job(p.jobId);
+          var roleTitle = job ? job.title : 'Unknown role';
+          var idx = WFApp.state.applicants.indexOf(p);
+          var isDecided = p.status === 'accepted' || p.status === 'rejected';
+          return '<div class="card"><div class="cluster" style="justify-content:space-between;align-items:flex-start">' +
+            '<div>' +
+              '<div style="font-family:var(--font-display);font-weight:700;font-size:18px">' + WFApp.escapeHtml(p.name) + '</div>' +
+              '<div class="muted">' + WFApp.escapeHtml(p.title) + '</div>' +
+              '<div class="muted" style="font-size:14px;margin-top:2px">' + p.experienceYears + ' yrs · applied ' + WFApp.escapeHtml(p.applied) + '</div>' +
+              '<div class="cluster" style="margin-top:8px;gap:6px"><span class="chip">' + WFApp.icon('briefcase') + WFApp.escapeHtml(roleTitle) + '</span></div>' +
+            '</div>' +
+            '<div class="cluster" style="justify-content:flex-end;gap:8px">' +
+              WFApp.statusBadge(p.status) +
+              '<a class="btn btn--secondary btn--sm" href="applicant-detail.html?id=' + encodeURIComponent(p.id) + '">View</a>' +
+              '<button class="btn btn--primary btn--sm" onclick="decide(' + idx + ',\'accepted\')"' + (isDecided ? ' disabled' : '') + '>' + WFApp.icon('check') + 'Accept</button>' +
+              '<button class="btn btn--ghost btn--sm" onclick="decide(' + idx + ',\'rejected\')"' + (isDecided ? ' disabled' : '') + '>' + WFApp.icon('x') + 'Reject</button>' +
+            '</div>' +
+          '</div></div>';
+        }).join('');
+      }
+
+      window.decide = function (idx, status) {
+        var p = WFApp.state.applicants[idx];
+        if (!p) { return; }
+        p.status = status;
+        render();
+        WFApp.toast((status === 'accepted' ? 'Accepted' : 'Rejected') + ' ' + p.name);
+      };
+
+      filterEl.addEventListener('change', render);
+      render();
+    });
+  </script>
+</body>
+</html>

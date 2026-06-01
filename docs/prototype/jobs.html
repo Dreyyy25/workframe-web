@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Workframe — Browse jobs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <script>(function(){try{var t=localStorage.getItem('wf-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+  <style>
+    /* page-local, custom-property only — theme-safe hover for numbered pager */
+    .page-btn:hover{background:var(--surface-2);}
+    .page-btn[aria-current="true"]:hover{background:var(--ink);}
+    .jobs-grid{display:grid;gap:var(--space-6);align-items:start;grid-template-columns:280px 1fr;}
+    @media (max-width:780px){ .jobs-grid{grid-template-columns:1fr;} }
+  </style>
+</head>
+<body data-shell="marketing" data-auth="guest" data-active="jobs">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div id="shell-top"></div>
+  <div id="shell-side"></div>
+  <main id="main">
+
+    <div class="container section">
+      <div class="section-head">
+        <h1 style="font-size:clamp(34px,5vw,52px)">Browse jobs</h1>
+        <span class="muted" id="result-count"></span>
+      </div>
+
+      <div class="jobs-grid">
+
+        <form class="filters stack" id="filters" onsubmit="return false">
+          <div class="field" style="margin-bottom:0">
+            <label class="field__label" for="f-q">Keyword</label>
+            <input class="input" type="text" id="f-q" name="q" placeholder="Role, skill or company…" autocomplete="off" />
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label class="field__label" for="f-type">Job type</label>
+            <select class="select" id="f-type"></select>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label class="field__label" for="f-stream">Category</label>
+            <select class="select" id="f-stream"></select>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label class="field__label" for="f-min">Min salary (yearly)</label>
+            <input class="input" type="number" id="f-min" name="min" min="0" step="5000" placeholder="e.g. 100000" inputmode="numeric" />
+          </div>
+          <button class="btn btn--ghost btn--sm" type="button" onclick="clearFilters()">Clear filters</button>
+        </form>
+
+        <div>
+          <div class="grid" id="results" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr))"></div>
+          <div class="pagination" id="pager"></div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+  <div id="shell-foot"></div>
+  <div id="toast-root" aria-live="polite"></div>
+  <div id="modal-root"></div>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    (function(){
+      var PER_PAGE = 9;
+      var page = 1;
+
+      var elQ = document.getElementById('f-q');
+      var elType = document.getElementById('f-type');
+      var elStream = document.getElementById('f-stream');
+      var elMin = document.getElementById('f-min');
+      var elResults = document.getElementById('results');
+      var elPager = document.getElementById('pager');
+      var elCount = document.getElementById('result-count');
+
+      // Populate selects from trusted WF data
+      elType.innerHTML = '<option value="">All types</option>' + WF.jobTypes.map(function(t){
+        return '<option value="' + t + '">' + t + '</option>';
+      }).join('');
+      elStream.innerHTML = '<option value="">All categories</option>' + WF.businessStreams.map(function(s){
+        return '<option value="' + s + '">' + s + '</option>';
+      }).join('');
+
+      function filtered(){
+        var q = elQ.value.trim().toLowerCase();
+        var type = elType.value;
+        var stream = elStream.value;
+        var min = parseFloat(elMin.value);
+        var hasMin = !isNaN(min);
+        return WF.jobs.filter(function(j){
+          var c = WFApp.company(j.companyId) || {};
+          if(q){
+            var hay = (j.title + ' ' + (c.name || '')).toLowerCase();
+            if(hay.indexOf(q) === -1) return false;
+          }
+          if(type && j.type !== type) return false;
+          if(stream && c.stream !== stream) return false;
+          // Min salary applies ONLY to yearly roles; ignored for hourly/monthly
+          if(hasMin && j.salaryType === 'yearly' && j.salaryMax < min) return false;
+          return true;
+        });
+      }
+
+      function jobCard(j){
+        var c = WFApp.company(j.companyId) || {};
+        return '<a class="job-card" href="job-detail.html?id=' + j.id + '">' +
+          '<div class="cluster" style="justify-content:space-between"><span class="chip">' + j.type + '</span>' +
+          '<span class="badge">' + WFApp.icon('pin') + j.city + '</span></div>' +
+          '<h2 class="job-card__title" style="margin-top:12px;font-size:20px">' + j.title + '</h2>' +
+          '<div class="job-card__meta">' + (c.name || '') + '</div>' +
+          '<div class="cluster" style="justify-content:space-between;margin-top:16px">' +
+          '<span class="job-card__salary">' + WFApp.money(j.salaryMin, j.salaryMax, j.salaryType) + '</span>' +
+          '<span class="btn btn--secondary btn--sm">View</span></div>' +
+          '</a>';
+      }
+
+      function render(){
+        var list = filtered();
+        var total = list.length;
+        var pages = Math.max(1, Math.ceil(total / PER_PAGE));
+        if(page > pages) page = pages;
+
+        elCount.textContent = total === 1 ? '1 role' : total + ' roles';
+
+        if(total === 0){
+          elResults.style.display = 'none';
+          elResults.innerHTML = '';
+          elPager.innerHTML = '';
+          if(!document.getElementById('jobs-empty')){
+            var e = document.createElement('div');
+            e.className = 'empty';
+            e.id = 'jobs-empty';
+            e.innerHTML = WFApp.icon('search') + '<div style="font-family:var(--font-display);font-weight:700;font-size:18px">No jobs match your filters</div>' +
+              '<p class="muted" style="margin:6px 0 0">Try clearing a filter or broadening your search.</p>';
+            elResults.parentNode.insertBefore(e, elPager);
+          }
+          return;
+        }
+
+        var existing = document.getElementById('jobs-empty');
+        if(existing) existing.remove();
+        elResults.style.display = '';
+
+        var start = (page - 1) * PER_PAGE;
+        var slice = list.slice(start, start + PER_PAGE);
+        elResults.innerHTML = slice.map(jobCard).join('');
+
+        if(pages <= 1){
+          elPager.innerHTML = '';
+        } else {
+          var buttons = '';
+          for(var p = 1; p <= pages; p++){
+            buttons += '<button class="page-btn" type="button"' +
+              (p === page ? ' aria-current="true"' : '') +
+              ' aria-label="Page ' + p + '" data-page="' + p + '">' + p + '</button>';
+          }
+          elPager.innerHTML = buttons;
+          [].forEach.call(elPager.querySelectorAll('.page-btn'), function(btn){
+            btn.addEventListener('click', function(){
+              page = parseInt(btn.getAttribute('data-page'), 10);
+              render();
+              elResults.scrollIntoView({behavior:'smooth', block:'start'});
+            });
+          });
+        }
+      }
+
+      window.clearFilters = function(){
+        elQ.value = '';
+        elType.value = '';
+        elStream.value = '';
+        elMin.value = '';
+        page = 1;
+        render();
+      };
+
+      // Prefill from URL query params (?stream= / ?search=)
+      var preStream = WFApp.qs('stream');
+      if(preStream && WF.businessStreams.indexOf(preStream) !== -1) elStream.value = preStream;
+      var preSearch = WFApp.qs('search');
+      if(preSearch) elQ.value = preSearch;
+
+      // Re-render on any filter change
+      [elQ, elType, elStream, elMin].forEach(function(el){
+        el.addEventListener('input', function(){ page = 1; render(); });
+        el.addEventListener('change', function(){ page = 1; render(); });
+      });
+
+      render();
+    })();
+  </script>
+</body>
+</html>

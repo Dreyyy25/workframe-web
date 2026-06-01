@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Company profile · Workframe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/styles.css" />
+  <script>(function(){try{var t=localStorage.getItem('wf-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+</head>
+<body data-base="../" data-shell="console" data-auth="company" data-active="company-profile">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="app-console">
+    <div id="shell-side"></div>
+    <div>
+      <div id="console-topbar-mount"></div>
+      <div class="console-main">
+        <main id="main">
+
+          <h1 style="margin-bottom:6px">Company profile</h1>
+          <p class="muted" style="margin-bottom:var(--space-8);max-width:560px">Keep your public profile current. These details appear on your company page and on every job you post.</p>
+
+          <!-- ===== Details form ===== -->
+          <form class="card" id="profile-form" style="max-width:760px" onsubmit="WFApp_profile.save();return false;">
+            <div class="field">
+              <label class="field__label" for="cp-name">Company name <span class="req">*</span></label>
+              <input class="input" id="cp-name" name="name" required />
+              <div class="field__error" id="cp-name-err" hidden></div>
+            </div>
+
+            <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
+              <div class="field">
+                <label class="field__label" for="cp-stream">Business stream <span class="req">*</span></label>
+                <select class="select" id="cp-stream" name="stream" required></select>
+              </div>
+              <div class="field">
+                <label class="field__label" for="cp-status">Status <span class="req">*</span></label>
+                <select class="select" id="cp-status" name="status" required></select>
+              </div>
+            </div>
+
+            <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
+              <div class="field">
+                <label class="field__label" for="cp-website">Website</label>
+                <input class="input" id="cp-website" name="website" type="text" placeholder="company.com" />
+                <p class="field__hint">No need to include https://</p>
+              </div>
+              <div class="field">
+                <label class="field__label" for="cp-email">Contact email <span class="req">*</span></label>
+                <input class="input" id="cp-email" name="email" type="email" placeholder="careers@company.com" required />
+                <div class="field__error" id="cp-email-err" hidden></div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="cp-desc">Description</label>
+              <textarea class="textarea" id="cp-desc" name="description" placeholder="Tell candidates what your company does and what it's like to work there."></textarea>
+              <p class="field__hint">Shown at the top of your public company page.</p>
+            </div>
+
+            <div class="cluster" style="justify-content:flex-end">
+              <button class="btn btn--primary" type="submit">Save changes</button>
+            </div>
+          </form>
+
+          <!-- ===== Images section ===== -->
+          <section style="margin-top:var(--space-12);max-width:760px">
+            <div class="section-head">
+              <h2 style="margin:0">Images</h2>
+              <button class="btn btn--secondary btn--sm" type="button" onclick="WFApp_profile.openUploadModal()">
+                <span aria-hidden="true" data-icon="plus"></span>Upload image
+              </button>
+            </div>
+            <p class="muted" style="margin-top:0">Photos of your office, team or product. These appear in a gallery on your public profile.</p>
+
+            <div class="grid" id="img-grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))" aria-label="Company images"></div>
+
+            <div class="empty" id="img-empty" hidden>
+              <div aria-hidden="true" data-icon="grid"></div>
+              <p class="muted" style="margin:0">No images yet. Upload one to bring your profile to life.</p>
+            </div>
+          </section>
+
+        </main>
+      </div>
+    </div>
+  </div>
+  <div id="toast-root" aria-live="polite"></div>
+  <div id="modal-root"></div>
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script>
+  (function(){
+    var esc = WFApp.escapeHtml;
+    var company = WFApp.company('c1');
+    var WFApp_profile = window.WFApp_profile = {};
+
+    // ---- decorative icons (buttons / empty state) ----
+    [].forEach.call(document.querySelectorAll('[data-icon]'), function(el){
+      el.outerHTML = WFApp.icon(el.getAttribute('data-icon'));
+    });
+
+    // ---- build selects from WF enums ----
+    document.getElementById('cp-stream').innerHTML = WF.businessStreams.map(function(s){
+      return '<option value="'+esc(s)+'"'+(s===company.stream?' selected':'')+'>'+esc(s)+'</option>';
+    }).join('');
+    document.getElementById('cp-status').innerHTML = WF.enums.companyStatus.map(function(s){
+      var label = s.charAt(0).toUpperCase()+s.slice(1);
+      return '<option value="'+esc(s)+'"'+(s===company.status?' selected':'')+'>'+esc(label)+'</option>';
+    }).join('');
+
+    // ---- prefill text inputs (trusted WF data) ----
+    document.getElementById('cp-name').value = company.name || '';
+    document.getElementById('cp-website').value = company.website || '';
+    document.getElementById('cp-email').value = (company.email || ('careers@' + (company.website || 'company.com')));
+    document.getElementById('cp-desc').value = company.description || '';
+
+    // ---- save ----
+    WFApp_profile.save = function(){
+      var nameEl = document.getElementById('cp-name');
+      var nameErr = document.getElementById('cp-name-err');
+      var emailEl = document.getElementById('cp-email');
+      var emailErr = document.getElementById('cp-email-err');
+      var ok = true;
+
+      if(!nameEl.value.trim()){
+        nameErr.innerHTML = WFApp.icon('x') + 'Please enter a company name.';
+        nameErr.hidden = false; ok = false;
+      } else { nameErr.hidden = true; }
+
+      if(!emailEl.value.trim()){
+        emailErr.innerHTML = WFApp.icon('x') + 'Please enter a contact email.';
+        emailErr.hidden = false; ok = false;
+      } else { emailErr.hidden = true; }
+
+      if(!ok){ (nameErr.hidden ? emailEl : nameEl).focus(); return; }
+      WFApp.toast('Company profile saved');
+    };
+
+    // ================= IMAGES =================
+    function imgTile(url){
+      var safe = esc(url);
+      return '<figure class="card" style="padding:var(--space-3);margin:0">'+
+        '<img src="'+safe+'" alt="Company image" loading="lazy" '+
+          'style="border:2px solid var(--line);border-radius:var(--r);aspect-ratio:16/10;object-fit:cover;width:100%" '+
+          'onerror="this.style.display=\'none\'" />'+
+        '<figcaption class="cluster" style="justify-content:flex-end;margin-top:var(--space-3)">'+
+          '<button class="btn btn--ghost btn--sm" type="button" onclick="WFApp_profile.removeImage(this)" aria-label="Remove company image">'+
+            WFApp.icon('trash')+'Remove</button>'+
+        '</figcaption>'+
+      '</figure>';
+    }
+    function refreshImgEmpty(){
+      var grid = document.getElementById('img-grid');
+      document.getElementById('img-empty').hidden = grid.children.length > 0;
+    }
+    function renderImages(){
+      document.getElementById('img-grid').innerHTML = (company.images || []).map(imgTile).join('');
+      refreshImgEmpty();
+    }
+    WFApp_profile.removeImage = function(btn){
+      btn.closest('figure').remove();
+      refreshImgEmpty();
+      WFApp.toast('Image removed');
+    };
+
+    WFApp_profile.openUploadModal = function(){
+      WFApp.openModal(
+        '<h2>Upload image</h2>'+
+        '<p class="muted">Paste a link to an image. It will be added to your gallery.</p>'+
+        '<form onsubmit="return WFApp_profile.submitImage(this)">'+
+          '<div class="field"><label class="field__label" for="img-url">Image URL <span class="req">*</span></label>'+
+            '<input class="input" id="img-url" type="text" placeholder="https://…/photo.jpg" required />'+
+            '<div class="field__error" id="img-url-err" hidden>'+WFApp.icon('x')+'Please enter an image URL.</div></div>'+
+          '<div class="cluster" style="justify-content:flex-end;margin-top:8px">'+
+            '<button class="btn btn--ghost" type="button" onclick="WFApp.closeModal()">Cancel</button>'+
+            '<button class="btn btn--primary" type="submit">Add</button>'+
+          '</div>'+
+        '</form>'
+      );
+    };
+    WFApp_profile.submitImage = function(form){
+      var urlEl = document.getElementById('img-url');
+      var err = document.getElementById('img-url-err');
+      var url = urlEl.value.trim();
+      if(!url){ err.hidden = false; urlEl.focus(); return false; }
+      document.getElementById('img-grid').insertAdjacentHTML('beforeend', imgTile(url));
+      refreshImgEmpty();
+      WFApp.closeModal();
+      WFApp.toast('Image added');
+      return false;
+    };
+
+    renderImages();
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard — Workframe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/styles.css" />
+  <script>(function(){try{var t=localStorage.getItem('wf-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+</head>
+<body data-base="../" data-shell="marketing" data-auth="seeker" data-active="dashboard">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div id="shell-top"></div>
+  <div id="shell-side"></div>
+  <main id="main">
+
+    <div class="container section">
+
+      <header style="margin-bottom:var(--space-8)">
+        <p class="muted" style="font-weight:600;letter-spacing:.04em;text-transform:uppercase;font-size:13px;margin:0 0 8px">Seeker dashboard</p>
+        <h1>Welcome back, Maya</h1>
+        <p class="muted" style="max-width:560px;font-size:18px;margin:0">Here's where your applications stand and a few roles picked for you.</p>
+      </header>
+
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))" id="stat-grid"></div>
+
+      <div class="section-head" style="margin-top:var(--space-12)"><h2>Recommended for you</h2></div>
+      <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))" id="rec-grid"></div>
+
+      <div class="section-head" style="margin-top:var(--space-12)">
+        <h2>Recent applications</h2>
+        <a class="btn btn--ghost btn--sm" href="applications.html">View all applications</a>
+      </div>
+      <div class="grid" style="grid-template-columns:1fr;gap:var(--space-3)" id="apps-list"></div>
+
+    </div>
+
+  </main>
+  <div id="shell-foot"></div>
+  <div id="toast-root" aria-live="polite"></div>
+  <div id="modal-root"></div>
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded',function(){
+      var apps = WFApp.state.applications;
+
+      // ---- Stat cards: counts by status ----
+      var count = function(status){ return apps.filter(function(a){return a.status===status;}).length; };
+      var stats = [
+        {num: apps.length,          label:'Total applications'},
+        {num: count('pending'),     label:'Pending'},
+        {num: count('reviewed'),    label:'Reviewed'},
+        {num: count('accepted'),    label:'Accepted'},
+      ];
+      document.getElementById('stat-grid').innerHTML = stats.map(function(s){
+        return '<div class="stat-card"><div class="stat-card__num">'+s.num+'</div>'+
+          '<div class="stat-card__label">'+s.label+'</div></div>';
+      }).join('');
+
+      // ---- Recommended jobs (reuse index.html job-card pattern) ----
+      document.getElementById('rec-grid').innerHTML = WF.jobs.slice(0,3).map(function(j){
+        var c = WFApp.company(j.companyId);
+        return '<a class="job-card" href="../job-detail.html?id='+j.id+'">'+
+          '<div class="cluster" style="justify-content:space-between"><span class="chip">'+j.type+'</span>'+
+            '<span class="badge">'+WFApp.icon('pin')+j.city+'</span></div>'+
+          '<h3 class="job-card__title" style="margin-top:12px">'+j.title+'</h3>'+
+          '<div class="job-card__meta">'+c.name+'</div>'+
+          '<div class="cluster" style="justify-content:space-between;margin-top:16px">'+
+            '<span class="job-card__salary">'+WFApp.money(j.salaryMin,j.salaryMax,j.salaryType)+'</span>'+
+            '<span class="btn btn--secondary btn--sm">View role</span></div>'+
+        '</a>';
+      }).join('');
+
+      // ---- Recent applications list ----
+      var listEl = document.getElementById('apps-list');
+      if(!apps.length){
+        listEl.innerHTML = '<div class="empty">'+WFApp.icon('inbox')+
+          '<h3 style="margin:12px 0 4px">No applications yet</h3>'+
+          '<p class="muted" style="margin:0 0 16px">When you apply to roles, they\'ll show up here.</p>'+
+          '<a class="btn btn--primary" href="../jobs.html">Browse jobs</a></div>';
+      } else {
+        listEl.innerHTML = apps.slice(0,5).map(function(a){
+          var j = WFApp.job(a.jobId);
+          var c = j ? WFApp.company(j.companyId) : null;
+          var title = j ? j.title : 'Role no longer available';
+          var company = c ? c.name : '—';
+          return '<a class="job-card" href="application-detail.html?id='+a.id+'" '+
+            'style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);padding:var(--space-4) var(--space-6)">'+
+            '<div style="min-width:0">'+
+              '<div class="job-card__title" style="font-size:16px;margin:0">'+title+'</div>'+
+              '<div class="job-card__meta">'+company+' · Applied '+a.applied+'</div>'+
+            '</div>'+
+            '<div class="cluster" style="flex-wrap:nowrap;gap:var(--space-3)">'+
+              WFApp.statusBadge(a.status)+
+              '<span aria-hidden="true" style="display:inline-flex;color:var(--muted);transform:rotate(-90deg)">'+WFApp.icon('chevron')+'</span>'+
+            '</div>'+
+          '</a>';
+        }).join('');
+      }
+    });
+  </script>
+</body>
+</html>

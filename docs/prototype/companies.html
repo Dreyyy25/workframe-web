@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Workframe — Companies</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <script>(function(){try{var t=localStorage.getItem('wf-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+</head>
+<body data-shell="marketing" data-auth="guest" data-active="companies">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div id="shell-top"></div>
+  <div id="shell-side"></div>
+  <main id="main">
+
+    <section class="section"><div class="container">
+      <div class="section-head">
+        <div>
+          <h1>Companies</h1>
+          <p class="muted" style="margin:0">Browse the verified employers hiring on Workframe right now.</p>
+        </div>
+      </div>
+
+      <div class="cluster" style="margin-bottom:var(--space-6)">
+        <div class="field" style="flex:1;min-width:220px;margin-bottom:0">
+          <label class="field__label" for="c-q" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap">Search companies</label>
+          <input class="input" id="c-q" type="search" placeholder="Search companies…" aria-label="Search companies" />
+        </div>
+        <div class="field" style="min-width:200px;margin-bottom:0">
+          <label class="field__label" for="c-stream" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap">Category</label>
+          <select class="select" id="c-stream" aria-label="Filter by category"></select>
+        </div>
+      </div>
+
+      <div class="grid" id="company-grid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr))"></div>
+    </div></section>
+
+  </main>
+  <div id="shell-foot"></div>
+  <div id="toast-root" aria-live="polite"></div>
+  <div id="modal-root"></div>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      var qEl = document.getElementById('c-q');
+      var streamEl = document.getElementById('c-stream');
+      var grid = document.getElementById('company-grid');
+
+      streamEl.innerHTML = '<option value="">All categories</option>' +
+        WF.businessStreams.map(function(s){ return '<option value="'+s+'">'+s+'</option>'; }).join('');
+
+      function openRoles(companyId){
+        return WF.jobs.filter(function(j){ return j.companyId === companyId; }).length;
+      }
+      function truncate(s){
+        s = String(s || '');
+        return s.length > 110 ? s.slice(0,110).replace(/\s+\S*$/,'') + '…' : s;
+      }
+
+      function cardHtml(c){
+        var n = openRoles(c.id);
+        return '<a class="company-card" href="company-public.html?id='+c.id+'">'+
+          '<div class="cluster">'+
+            '<span class="logo-square">'+c.logo+'</span>'+
+            '<span class="job-card__title">'+c.name+'</span>'+
+          '</div>'+
+          '<div class="cluster" style="margin-top:12px"><span class="chip">'+c.stream+'</span></div>'+
+          '<p class="muted" style="margin:12px 0 16px">'+truncate(c.description)+'</p>'+
+          '<div class="cluster" style="gap:6px;font-weight:600">'+WFApp.icon('briefcase')+
+            '<span>'+n+' open '+(n===1?'role':'roles')+'</span>'+
+          '</div>'+
+        '</a>';
+      }
+
+      function render(){
+        var q = qEl.value.trim().toLowerCase();
+        var stream = streamEl.value;
+        var list = WF.companies.filter(function(c){
+          var matchesName = !q || c.name.toLowerCase().indexOf(q) !== -1;
+          var matchesStream = !stream || c.stream === stream;
+          return matchesName && matchesStream;
+        });
+        if(!list.length){
+          grid.style.display = 'block';
+          grid.innerHTML = '<div class="empty">'+WFApp.icon('building')+
+            '<h2 style="margin:0 0 6px">No companies found</h2>'+
+            '<p class="muted" style="margin:0">Try a different search term or category.</p></div>';
+          return;
+        }
+        grid.style.display = 'grid';
+        grid.innerHTML = list.map(cardHtml).join('');
+      }
+
+      qEl.addEventListener('input', render);
+      streamEl.addEventListener('change', render);
+      render();
+    });
+  </script>
+</body>
+</html>

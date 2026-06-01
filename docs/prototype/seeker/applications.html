@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My applications — Workframe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/styles.css" />
+  <script>(function(){try{var t=localStorage.getItem('wf-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+  <style>#app-list .meta-ico svg{width:14px;height:14px;}</style>
+</head>
+<body data-base="../" data-shell="marketing" data-auth="seeker" data-active="applications">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div id="shell-top"></div>
+  <div id="shell-side"></div>
+  <main id="main">
+
+    <div class="container section">
+      <h1>My applications</h1>
+      <p class="muted" style="max-width:560px;font-size:18px">Track every role you have applied to — from pending to accepted — and withdraw anything that is no longer the right fit.</p>
+
+      <div class="cluster" role="group" aria-label="Filter applications by status" id="app-filters" style="margin-block:var(--space-6)">
+        <button type="button" class="chip chip--clickable chip--active" data-filter="all" aria-pressed="true">All</button>
+        <button type="button" class="chip chip--clickable" data-filter="pending" aria-pressed="false">Pending</button>
+        <button type="button" class="chip chip--clickable" data-filter="reviewed" aria-pressed="false">Reviewed</button>
+        <button type="button" class="chip chip--clickable" data-filter="accepted" aria-pressed="false">Accepted</button>
+        <button type="button" class="chip chip--clickable" data-filter="rejected" aria-pressed="false">Rejected</button>
+        <button type="button" class="chip chip--clickable" data-filter="withdrawn" aria-pressed="false">Withdrawn</button>
+      </div>
+
+      <div id="app-list" style="display:grid;gap:var(--space-4)"></div>
+    </div>
+
+  </main>
+  <div id="shell-foot"></div>
+  <div id="toast-root" aria-live="polite"></div>
+  <div id="modal-root"></div>
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      var listEl = document.getElementById('app-list');
+      var filterEl = document.getElementById('app-filters');
+      var currentFilter = 'all';
+
+      function fmtDate(iso){
+        var d = new Date(iso + 'T00:00:00');
+        if(isNaN(d)) return iso;
+        return d.toLocaleDateString(undefined, {year:'numeric', month:'short', day:'numeric'});
+      }
+
+      function render(){
+        var apps = WFApp.state.applications.filter(function(a){
+          return currentFilter === 'all' ? true : a.status === currentFilter;
+        });
+
+        if(!apps.length){
+          var label = currentFilter === 'all' ? '' : currentFilter;
+          listEl.innerHTML =
+            '<div class="empty">' + WFApp.icon('inbox') +
+            '<h2 style="margin:0 0 6px">No ' + WFApp.escapeHtml(label) + ' applications</h2>' +
+            '<p class="muted" style="margin:0 0 16px">' +
+              (currentFilter === 'all'
+                ? 'You haven\'t applied to any roles yet.'
+                : 'Nothing here under this filter right now.') +
+            '</p><a class="btn btn--primary" href="../jobs.html">Browse open jobs</a></div>';
+          return;
+        }
+
+        listEl.innerHTML = apps.map(function(a){
+          var j = WFApp.job(a.jobId);
+          if(!j) return '';
+          var c = WFApp.company(j.companyId);
+          var canWithdraw = (a.status === 'pending' || a.status === 'reviewed');
+          var withdrawBtn = canWithdraw
+            ? '<button type="button" class="btn btn--ghost btn--sm" onclick="WFApp.withdrawApp(\'' + a.id + '\')">' +
+                WFApp.icon('x') + 'Withdraw</button>'
+            : '';
+          return '<div class="card">' +
+            '<div class="cluster" style="justify-content:space-between;align-items:flex-start">' +
+              '<div>' +
+                '<a href="application-detail.html?id=' + a.id + '" class="job-card__title" style="font-family:var(--font-display);font-weight:700;font-size:20px">' +
+                  j.title + '</a>' +
+                '<div class="muted" style="margin-top:4px">' + (c ? c.name : '—') + '</div>' +
+                '<div class="muted meta-ico" style="margin-top:4px;font-size:13px;display:inline-flex;align-items:center;gap:5px">' +
+                  WFApp.icon('clock') +
+                  'Applied ' + fmtDate(a.applied) + '</div>' +
+              '</div>' +
+              '<div class="cluster" style="gap:var(--space-3)">' +
+                WFApp.statusBadge(a.status) + withdrawBtn +
+              '</div>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+      }
+
+      filterEl.addEventListener('click', function(e){
+        var btn = e.target.closest('.chip[data-filter]');
+        if(!btn) return;
+        currentFilter = btn.getAttribute('data-filter');
+        [].forEach.call(filterEl.querySelectorAll('.chip'), function(ch){
+          var on = ch === btn;
+          ch.classList.toggle('chip--active', on);
+          ch.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+        render();
+      });
+
+      WFApp.withdrawApp = function(id){
+        var app = WFApp.state.applications.filter(function(a){ return a.id === id; })[0];
+        if(!app) return;
+        app.status = 'withdrawn';
+        render();
+        WFApp.toast('Application withdrawn');
+      };
+
+      render();
+    });
+  </script>
+</body>
+</html>

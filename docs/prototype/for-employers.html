@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Workframe — For Employers</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <script>(function(){try{var t=localStorage.getItem('wf-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+</head>
+<body data-shell="marketing" data-auth="guest" data-active="employers">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div id="shell-top"></div>
+  <div id="shell-side"></div>
+  <main id="main">
+
+    <section class="hero"><div class="container">
+      <p class="muted" style="font-weight:600;letter-spacing:.04em;text-transform:uppercase;font-size:13px">For companies</p>
+      <h1>Hire people who <span class="accent">fit</span>.</h1>
+      <p class="muted" style="max-width:560px;font-size:18px">Post a role, reach real candidates, and review every applicant in one simple console — no clutter, no noise.</p>
+      <div class="cluster" style="margin-top:var(--space-6)">
+        <a class="btn btn--primary" href="register.html">Post a job</a>
+        <a class="btn btn--ghost" href="jobs.html">See the candidate experience</a>
+      </div>
+    </div></section>
+
+    <section class="section" style="background:var(--surface-2)"><div class="container">
+      <div class="section-head"><h2>Everything you need to hire</h2></div>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))" id="feature-grid"></div>
+    </div></section>
+
+    <section class="section"><div class="container">
+      <div class="section-head"><h2>How it works</h2></div>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))" id="steps-grid"></div>
+    </div></section>
+
+    <section class="section" style="background:var(--ink);color:var(--bg)"><div class="container" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:24px">
+      <div>
+        <h2 style="color:var(--bg)">Ready to hire people who fit?</h2>
+        <p style="color:var(--bg);opacity:.8;margin:0">Create your company and post your first role in minutes.</p>
+      </div>
+      <a class="btn btn--secondary" href="register.html">Post a job</a>
+    </div></section>
+
+  </main>
+  <div id="shell-foot"></div>
+  <div id="toast-root" aria-live="polite"></div>
+  <div id="modal-root"></div>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded',function(){
+      var features=[
+        {icon:'briefcase',title:'Reach real candidates',body:'Your role goes in front of active job seekers browsing Workframe right now — every profile is a real person.'},
+        {icon:'inbox',title:'Manage applicants in one place',body:'Every application lands in one inbox. Move candidates from pending to reviewed to accepted with a click.'},
+        {icon:'grid',title:'One simple console',body:'Job posts, applicants, and your company profile live in a single uncluttered dashboard.'}
+      ];
+      document.getElementById('feature-grid').innerHTML = features.map(function(f){
+        return '<div class="card">'+
+          '<span class="logo-square">'+WFApp.icon(f.icon)+'</span>'+
+          '<h3 style="margin-top:16px">'+f.title+'</h3>'+
+          '<p class="muted" style="margin:0">'+f.body+'</p>'+
+        '</div>';
+      }).join('');
+
+      var steps=[
+        {n:'01',title:'Create your company',body:'Set up your company profile so candidates know who they are applying to.'},
+        {n:'02',title:'Post a role',body:'Add the title, salary, location, and required skills. Publish in minutes.'},
+        {n:'03',title:'Review applicants',body:'Read cover letters, track status, and decide — all from one console.'}
+      ];
+      document.getElementById('steps-grid').innerHTML = steps.map(function(s){
+        return '<div class="card">'+
+          '<div style="font-family:var(--font-display);font-weight:800;font-size:48px;line-height:1;color:var(--accent)">'+s.n+'</div>'+
+          '<h3 style="margin-top:16px">'+s.title+'</h3>'+
+          '<p class="muted" style="margin:0">'+s.body+'</p>'+
+        '</div>';
+      }).join('');
+    });
+  </script>
+</body>
+</html>

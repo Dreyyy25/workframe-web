@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Maya Okafor — Profile · Workframe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/styles.css" />
+  <script>(function(){try{var t=localStorage.getItem('wf-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+  <style>
+    .skill-x svg{width:14px;height:14px;}
+    .skill-x:hover{background:var(--surface-2);}
+    .edux-card h3{font-family:var(--font-display);}
+  </style>
+</head>
+<body data-base="../" data-shell="marketing" data-auth="seeker" data-active="profile">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div id="shell-top"></div>
+  <div id="shell-side"></div>
+  <main id="main">
+
+    <div class="container section">
+
+      <!-- Profile header -->
+      <div class="cluster" style="gap:var(--space-6);margin-bottom:var(--space-8)">
+        <span class="avatar" style="width:72px;height:72px;font-size:24px;border-radius:var(--r)" aria-hidden="true">MO</span>
+        <div>
+          <h1 style="margin:0">Maya Okafor</h1>
+          <p class="muted" id="profile-goals" style="margin:6px 0 0;max-width:520px"></p>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs" role="tablist" aria-label="Profile sections">
+        <button class="tab tab--active" type="button" role="tab" data-tab="overview" aria-selected="true">Overview</button>
+        <button class="tab" type="button" role="tab" data-tab="education" aria-selected="false">Education</button>
+        <button class="tab" type="button" role="tab" data-tab="experience" aria-selected="false">Experience</button>
+        <button class="tab" type="button" role="tab" data-tab="skills" aria-selected="false">Skills</button>
+      </div>
+
+      <!-- OVERVIEW -->
+      <section class="tabpanel" data-tabpanel="overview" aria-label="Overview">
+        <div class="card" style="max-width:760px">
+          <h2 style="margin-top:0">Personal details</h2>
+          <form id="overview-form" onsubmit="WFApp.toast('Profile saved');return false;">
+            <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
+              <div class="field">
+                <label class="field__label" for="ov-first">First name <span class="req">*</span></label>
+                <input class="input" id="ov-first" name="first" required />
+              </div>
+              <div class="field">
+                <label class="field__label" for="ov-last">Last name <span class="req">*</span></label>
+                <input class="input" id="ov-last" name="last" required />
+              </div>
+            </div>
+            <div class="field">
+              <label class="field__label" for="ov-contact">Contact <span class="req">*</span></label>
+              <input class="input" id="ov-contact" name="contact" required />
+            </div>
+            <div class="field">
+              <label class="field__label" for="ov-goals">Career goals</label>
+              <textarea class="textarea" id="ov-goals" name="goals" placeholder="What kind of role are you looking for?"></textarea>
+            </div>
+            <div class="field">
+              <label class="field__label" for="ov-resume">Resume URL</label>
+              <input class="input" id="ov-resume" name="resume" type="text" placeholder="link-to-your-resume.pdf" />
+              <p class="field__hint">A direct link to your resume or portfolio.</p>
+            </div>
+            <div class="cluster" style="justify-content:flex-end">
+              <button class="btn btn--primary" type="submit">Save changes</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- EDUCATION -->
+      <section class="tabpanel" data-tabpanel="education" aria-label="Education" hidden>
+        <div class="section-head">
+          <h2>Education</h2>
+          <button class="btn btn--secondary btn--sm" type="button" data-icon="plus" onclick="WFApp_profile.openEducationModal()">Add education</button>
+        </div>
+        <div class="stack" id="education-list"></div>
+        <div class="empty" id="education-empty" hidden>
+          <p class="muted" style="margin:0">No education added yet.</p>
+        </div>
+      </section>
+
+      <!-- EXPERIENCE -->
+      <section class="tabpanel" data-tabpanel="experience" aria-label="Experience" hidden>
+        <div class="section-head">
+          <h2>Experience</h2>
+          <button class="btn btn--secondary btn--sm" type="button" data-icon="plus" onclick="WFApp_profile.openExperienceModal()">Add experience</button>
+        </div>
+        <div class="stack" id="experience-list"></div>
+        <div class="empty" id="experience-empty" hidden>
+          <p class="muted" style="margin:0">No experience added yet.</p>
+        </div>
+      </section>
+
+      <!-- SKILLS -->
+      <section class="tabpanel" data-tabpanel="skills" aria-label="Skills" hidden>
+        <div class="section-head">
+          <h2>Skills</h2>
+          <button class="btn btn--secondary btn--sm" type="button" data-icon="plus" onclick="WFApp_profile.openSkillModal()">Add skill</button>
+        </div>
+        <div class="card">
+          <div class="cluster" id="skills-list" aria-label="Your skills"></div>
+          <p class="muted" id="skills-empty" hidden style="margin:0">No skills added yet.</p>
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+  <div id="shell-foot"></div>
+  <div id="toast-root" aria-live="polite"></div>
+  <div id="modal-root"></div>
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script>
+  (function(){
+    var esc = WFApp.escapeHtml;
+    var seeker = WF.seeker;
+    var WFApp_profile = window.WFApp_profile = {};
+
+    // ---- header / overview prefill ----
+    document.getElementById('profile-goals').textContent = seeker.goals || '';
+    document.getElementById('ov-first').value = seeker.firstName || '';
+    document.getElementById('ov-last').value = seeker.lastName || '';
+    document.getElementById('ov-contact').value = seeker.contact || '';
+    document.getElementById('ov-goals').value = seeker.goals || '';
+    document.getElementById('ov-resume').value = seeker.resumeUrl || '';
+
+    // ================= EDUCATION =================
+    function eduCard(ed){
+      var range = esc(ed.start||'') + ' – ' + (ed.end ? esc(ed.end) : 'Present');
+      return '<div class="card edux-card">'+
+        '<div class="cluster" style="justify-content:space-between;align-items:flex-start;gap:var(--space-4)">'+
+          '<div>'+
+            '<h3 style="margin:0 0 4px">'+esc(ed.school||'')+'</h3>'+
+            '<div class="job-card__meta">'+esc(ed.degree||'')+' · '+esc(ed.field||'')+'</div>'+
+            '<div class="cluster" style="gap:var(--space-3);margin-top:8px">'+
+              '<span class="chip">'+WFApp.icon('clock')+range+'</span>'+
+              (ed.percentage!=null&&ed.percentage!==''? '<span class="chip">'+esc(String(ed.percentage))+'%</span>':'')+
+            '</div>'+
+          '</div>'+
+          '<div class="cluster" style="gap:var(--space-2);flex-wrap:nowrap">'+
+            '<button class="btn btn--ghost btn--sm" type="button" onclick="WFApp.toast(\'Edit education (demo)\')" aria-label="Edit '+esc(ed.school||'education')+'">'+WFApp.icon('edit')+'Edit</button>'+
+            '<button class="btn btn--ghost btn--sm" type="button" onclick="WFApp_profile.removeCard(this,\'Education removed\')" aria-label="Delete '+esc(ed.school||'education')+'">'+WFApp.icon('trash')+'Delete</button>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+    }
+    function renderEducation(){
+      var list = document.getElementById('education-list');
+      list.innerHTML = (seeker.education||[]).map(eduCard).join('');
+      refreshEmpty('education-list','education-empty');
+    }
+    WFApp_profile.openEducationModal = function(){
+      var degOpts = WF.enums.degreeType.map(function(d){return '<option value="'+esc(d)+'">'+esc(d)+'</option>';}).join('');
+      WFApp.openModal(
+        '<h2>Add education</h2>'+
+        '<form onsubmit="return WFApp_profile.submitEducation(this)">'+
+          '<div class="field"><label class="field__label" for="ed-school">School <span class="req">*</span></label>'+
+            '<input class="input" id="ed-school" required />'+
+            '<div class="field__error" id="ed-school-err" hidden>'+WFApp.icon('x')+'Please enter a school.</div></div>'+
+          '<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">'+
+            '<div class="field"><label class="field__label" for="ed-degree">Degree <span class="req">*</span></label>'+
+              '<select class="select" id="ed-degree" required>'+degOpts+'</select></div>'+
+            '<div class="field"><label class="field__label" for="ed-field">Field of study <span class="req">*</span></label>'+
+              '<input class="input" id="ed-field" required /></div>'+
+          '</div>'+
+          '<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">'+
+            '<div class="field"><label class="field__label" for="ed-start">Start</label>'+
+              '<input class="input" id="ed-start" type="month" /></div>'+
+            '<div class="field"><label class="field__label" for="ed-end">End</label>'+
+              '<input class="input" id="ed-end" type="month" /></div>'+
+            '<div class="field"><label class="field__label" for="ed-pct">Percentage</label>'+
+              '<input class="input" id="ed-pct" type="number" min="0" max="100" placeholder="88" /></div>'+
+          '</div>'+
+          '<div class="cluster" style="justify-content:flex-end;margin-top:8px">'+
+            '<button class="btn btn--ghost" type="button" onclick="WFApp.closeModal()">Cancel</button>'+
+            '<button class="btn btn--primary" type="submit">Add education</button>'+
+          '</div>'+
+        '</form>'
+      );
+    };
+    WFApp_profile.submitEducation = function(form){
+      var school = document.getElementById('ed-school').value.trim();
+      var err = document.getElementById('ed-school-err');
+      if(!school){ err.hidden=false; document.getElementById('ed-school').focus(); return false; }
+      var ed = {
+        school: school,
+        degree: document.getElementById('ed-degree').value,
+        field: document.getElementById('ed-field').value.trim(),
+        start: document.getElementById('ed-start').value,
+        end: document.getElementById('ed-end').value,
+        percentage: document.getElementById('ed-pct').value
+      };
+      var list = document.getElementById('education-list');
+      list.insertAdjacentHTML('afterbegin', eduCard(ed));
+      refreshEmpty('education-list','education-empty');
+      WFApp.closeModal();
+      WFApp.toast('Education added');
+      return false;
+    };
+
+    // ================= EXPERIENCE =================
+    function expCard(x){
+      var range = esc(x.start||'') + ' – ' + (x.end ? esc(x.end) : 'Present');
+      var loc = [x.city, x.country].filter(function(v){return v && v!=='—';}).map(esc).join(', ');
+      return '<div class="card edux-card">'+
+        '<div class="cluster" style="justify-content:space-between;align-items:flex-start;gap:var(--space-4)">'+
+          '<div>'+
+            '<h3 style="margin:0 0 4px">'+esc(x.position||'')+' @ '+esc(x.company||'')+'</h3>'+
+            (loc? '<div class="job-card__meta">'+loc+'</div>':'')+
+            '<div class="cluster" style="gap:var(--space-3);margin-top:8px">'+
+              '<span class="chip">'+WFApp.icon('clock')+range+'</span>'+
+            '</div>'+
+            (x.description? '<p class="muted" style="margin:12px 0 0">'+esc(x.description)+'</p>':'')+
+          '</div>'+
+          '<div class="cluster" style="gap:var(--space-2);flex-wrap:nowrap">'+
+            '<button class="btn btn--ghost btn--sm" type="button" onclick="WFApp.toast(\'Edit experience (demo)\')" aria-label="Edit '+esc(x.position||'experience')+'">'+WFApp.icon('edit')+'Edit</button>'+
+            '<button class="btn btn--ghost btn--sm" type="button" onclick="WFApp_profile.removeCard(this,\'Experience removed\')" aria-label="Delete '+esc(x.position||'experience')+'">'+WFApp.icon('trash')+'Delete</button>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+    }
+    function renderExperience(){
+      var list = document.getElementById('experience-list');
+      list.innerHTML = (seeker.experience||[]).map(expCard).join('');
+      refreshEmpty('experience-list','experience-empty');
+    }
+    WFApp_profile.openExperienceModal = function(){
+      WFApp.openModal(
+        '<h2>Add experience</h2>'+
+        '<form onsubmit="return WFApp_profile.submitExperience(this)">'+
+          '<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">'+
+            '<div class="field"><label class="field__label" for="xp-position">Position <span class="req">*</span></label>'+
+              '<input class="input" id="xp-position" required />'+
+              '<div class="field__error" id="xp-position-err" hidden>'+WFApp.icon('x')+'Please enter a position.</div></div>'+
+            '<div class="field"><label class="field__label" for="xp-company">Company <span class="req">*</span></label>'+
+              '<input class="input" id="xp-company" required /></div>'+
+          '</div>'+
+          '<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">'+
+            '<div class="field"><label class="field__label" for="xp-city">City</label>'+
+              '<input class="input" id="xp-city" /></div>'+
+            '<div class="field"><label class="field__label" for="xp-country">Country</label>'+
+              '<input class="input" id="xp-country" /></div>'+
+          '</div>'+
+          '<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">'+
+            '<div class="field"><label class="field__label" for="xp-start">Start</label>'+
+              '<input class="input" id="xp-start" type="month" /></div>'+
+            '<div class="field"><label class="field__label" for="xp-end">End</label>'+
+              '<input class="input" id="xp-end" type="month" />'+
+              '<p class="field__hint">Leave blank if this is your current role.</p></div>'+
+          '</div>'+
+          '<div class="field"><label class="field__label" for="xp-desc">Description</label>'+
+            '<textarea class="textarea" id="xp-desc" placeholder="What did you work on?"></textarea></div>'+
+          '<div class="cluster" style="justify-content:flex-end;margin-top:8px">'+
+            '<button class="btn btn--ghost" type="button" onclick="WFApp.closeModal()">Cancel</button>'+
+            '<button class="btn btn--primary" type="submit">Add experience</button>'+
+          '</div>'+
+        '</form>'
+      );
+    };
+    WFApp_profile.submitExperience = function(form){
+      var pos = document.getElementById('xp-position').value.trim();
+      var err = document.getElementById('xp-position-err');
+      if(!pos){ err.hidden=false; document.getElementById('xp-position').focus(); return false; }
+      var x = {
+        position: pos,
+        company: document.getElementById('xp-company').value.trim(),
+        city: document.getElementById('xp-city').value.trim(),
+        country: document.getElementById('xp-country').value.trim(),
+        start: document.getElementById('xp-start').value,
+        end: document.getElementById('xp-end').value,
+        description: document.getElementById('xp-desc').value.trim()
+      };
+      var list = document.getElementById('experience-list');
+      list.insertAdjacentHTML('afterbegin', expCard(x));
+      refreshEmpty('experience-list','experience-empty');
+      WFApp.closeModal();
+      WFApp.toast('Experience added');
+      return false;
+    };
+
+    // ================= SKILLS =================
+    function skillChip(sk){
+      var label = esc(sk.name||'') + ' · ' + esc(sk.level||'');
+      return '<span class="chip chip--clickable" style="gap:6px;padding-right:4px">'+
+        '<span>'+label+'</span>'+
+        '<button class="skill-x" type="button" onclick="WFApp_profile.removeSkill(this)" aria-label="Remove '+esc(sk.name||'skill')+'"'+
+          ' style="display:inline-flex;align-items:center;justify-content:center;padding:2px;border:none;background:transparent;color:inherit;border-radius:var(--r-sm)">'+
+          WFApp.icon('x')+'</button>'+
+      '</span>';
+    }
+    function renderSkills(){
+      var list = document.getElementById('skills-list');
+      list.innerHTML = (seeker.skills||[]).map(skillChip).join('');
+      refreshSkillsEmpty();
+    }
+    WFApp_profile.removeSkill = function(btn){
+      btn.closest('.chip').remove();
+      refreshSkillsEmpty();
+      WFApp.toast('Skill removed');
+    };
+    WFApp_profile.openSkillModal = function(){
+      var lvlOpts = WF.enums.skillLevel.map(function(l){return '<option value="'+esc(l)+'">'+esc(l)+'</option>';}).join('');
+      WFApp.openModal(
+        '<h2>Add skill</h2>'+
+        '<form onsubmit="return WFApp_profile.submitSkill(this)">'+
+          '<div class="field"><label class="field__label" for="sk-name">Skill <span class="req">*</span></label>'+
+            '<input class="input" id="sk-name" placeholder="e.g. GraphQL" required />'+
+            '<div class="field__error" id="sk-name-err" hidden>'+WFApp.icon('x')+'Please enter a skill.</div></div>'+
+          '<div class="field"><label class="field__label" for="sk-level">Level <span class="req">*</span></label>'+
+            '<select class="select" id="sk-level" required>'+lvlOpts+'</select></div>'+
+          '<div class="cluster" style="justify-content:flex-end;margin-top:8px">'+
+            '<button class="btn btn--ghost" type="button" onclick="WFApp.closeModal()">Cancel</button>'+
+            '<button class="btn btn--primary" type="submit">Add skill</button>'+
+          '</div>'+
+        '</form>'
+      );
+    };
+    WFApp_profile.submitSkill = function(form){
+      var name = document.getElementById('sk-name').value.trim();
+      var err = document.getElementById('sk-name-err');
+      if(!name){ err.hidden=false; document.getElementById('sk-name').focus(); return false; }
+      var sk = { name: name, level: document.getElementById('sk-level').value };
+      document.getElementById('skills-list').insertAdjacentHTML('beforeend', skillChip(sk));
+      refreshSkillsEmpty();
+      WFApp.closeModal();
+      WFApp.toast('Skill added');
+      return false;
+    };
+
+    // ---- shared helpers ----
+    WFApp_profile.removeCard = function(btn, msg){
+      btn.closest('.edux-card').remove();
+      WFApp.toast(msg);
+      // recompute empty states for whichever list this belonged to
+      refreshEmpty('education-list','education-empty');
+      refreshEmpty('experience-list','experience-empty');
+    };
+    function refreshEmpty(listId, emptyId){
+      var list = document.getElementById(listId);
+      if(!list) return;
+      document.getElementById(emptyId).hidden = list.children.length > 0;
+    }
+    function refreshSkillsEmpty(){
+      var list = document.getElementById('skills-list');
+      document.getElementById('skills-empty').hidden = list.children.length > 0;
+    }
+
+    // ---- mount icons into static "Add" buttons ----
+    [].forEach.call(document.querySelectorAll('[data-icon]'), function(btn){
+      btn.insertAdjacentHTML('afterbegin', WFApp.icon(btn.getAttribute('data-icon')));
+    });
+
+    // ---- initial render ----
+    renderEducation();
+    renderExperience();
+    renderSkills();
+
+    // ---- open tab from ?tab= ----
+    document.addEventListener('DOMContentLoaded', function(){
+      var t = WFApp.qs('tab');
+      if(t){
+        var btn = document.querySelector('.tab[data-tab="'+t.replace(/[^a-z]/gi,'')+'"]');
+        if(btn) btn.click();
+      }
+    });
+  })();
+  </script>
+</body>
+</html>

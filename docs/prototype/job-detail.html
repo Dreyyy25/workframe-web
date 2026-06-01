@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Workframe — Job Detail</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <script>(function(){try{var t=localStorage.getItem('wf-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+</head>
+<body data-shell="marketing" data-auth="guest" data-active="jobs">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div id="shell-top"></div>
+  <div id="shell-side"></div>
+  <main id="main">
+
+    <section class="section"><div class="container">
+      <div id="job-root"></div>
+    </div></section>
+
+  </main>
+  <div id="shell-foot"></div>
+  <div id="toast-root" aria-live="polite"></div>
+  <div id="modal-root"></div>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded',function(){
+      var root = document.getElementById('job-root');
+      var id = WFApp.qs('id');
+      var j = id ? WFApp.job(id) : null;
+
+      if(!j){
+        root.innerHTML =
+          '<div class="empty">'+WFApp.icon('briefcase')+
+          '<h1>Job not found</h1>'+
+          '<p class="muted">This role may have been closed or the link is incorrect.</p>'+
+          '<a class="btn btn--primary" href="jobs.html">Browse all jobs</a>'+
+          '</div>';
+        return;
+      }
+
+      var c = WFApp.company(j.companyId) || {name:'A company', id:''};
+      var locType = (j.country && j.country!=='—') ? (j.city+', '+j.country) : j.city;
+
+      var skillsHtml = (j.skills||[]).map(function(sk){
+        var label = sk.name+' · '+sk.level + (sk.required===false ? ' (optional)' : '');
+        return '<span class="chip">'+label+'</span>';
+      }).join('');
+
+      root.innerHTML =
+        '<nav class="breadcrumb" aria-label="Breadcrumb">'+
+          '<a href="index.html">Home</a>'+
+          '<span aria-hidden="true">/</span>'+
+          '<a href="jobs.html">Jobs</a>'+
+          '<span aria-hidden="true">/</span>'+
+          '<span aria-current="page">'+j.title+'</span>'+
+        '</nav>'+
+
+        '<div class="job-detail-grid" style="display:grid;grid-template-columns:1fr 340px;gap:32px;align-items:start">'+
+
+          '<div>'+
+            '<h1 style="margin-top:0">'+j.title+'</h1>'+
+            '<p class="job-card__meta" style="font-size:16px;margin-top:0">'+
+              'at <a href="company-public.html?id='+c.id+'">'+c.name+'</a>'+
+            '</p>'+
+            '<div class="cluster" style="margin:16px 0 24px">'+
+              '<span class="chip">'+j.type+'</span>'+
+              '<span class="badge">'+WFApp.icon('pin')+locType+'</span>'+
+              '<span class="badge">'+WFApp.icon('clock')+'Closes '+j.deadline+'</span>'+
+            '</div>'+
+            '<p>'+j.description+'</p>'+
+            '<h3>Required skills</h3>'+
+            '<div class="cluster">'+skillsHtml+'</div>'+
+          '</div>'+
+
+          '<aside class="card" style="position:sticky;top:88px">'+
+            '<div class="job-card__salary" style="font-size:24px">'+WFApp.money(j.salaryMin,j.salaryMax,j.salaryType)+'</div>'+
+            '<dl style="margin:16px 0;display:grid;gap:12px">'+
+              '<div><dt class="muted" style="font-size:13px;font-weight:600">Employment type</dt><dd style="margin:0">'+j.type+'</dd></div>'+
+              '<div><dt class="muted" style="font-size:13px;font-weight:600">Location</dt><dd style="margin:0">'+locType+'</dd></div>'+
+              '<div><dt class="muted" style="font-size:13px;font-weight:600">Posted</dt><dd style="margin:0">'+j.posted+'</dd></div>'+
+              '<div><dt class="muted" style="font-size:13px;font-weight:600">Deadline</dt><dd style="margin:0">'+j.deadline+'</dd></div>'+
+            '</dl>'+
+            '<button class="btn btn--primary btn--block" id="apply-btn" onclick="WFApp.applyModal(\''+j.id+'\')">Apply now</button>'+
+          '</aside>'+
+
+        '</div>';
+    });
+  </script>
+  <style>
+    @media (max-width: 720px){
+      .job-detail-grid{grid-template-columns:1fr !important;}
+      .job-detail-grid aside{position:static !important;}
+    }
+  </style>
+</body>
+</html>

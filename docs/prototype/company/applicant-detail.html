@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Workframe — Applicant detail</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/styles.css" />
+  <script>(function(){try{var t=localStorage.getItem('wf-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+</head>
+<body data-base="../" data-shell="console" data-auth="company" data-active="applicants">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="app-console">
+    <div id="shell-side"></div>
+    <div>
+      <div id="console-topbar-mount"></div>
+      <div class="console-main">
+        <main id="main">
+          <div id="ap-root"></div>
+        </main>
+      </div>
+    </div>
+  </div>
+  <div id="toast-root" aria-live="polite"></div>
+  <div id="modal-root"></div>
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      var root = document.getElementById('ap-root');
+      var id = WFApp.qs('id');
+      var ap = WFApp.state.applicants.filter(function(p){ return p.id === id; })[0];
+
+      if(!ap){
+        root.innerHTML =
+          '<div class="empty">' + WFApp.icon('inbox') +
+          '<h1>Applicant not found</h1>' +
+          '<p class="muted">We couldn’t find an applicant with that ID. They may have been removed.</p>' +
+          '<a class="btn btn--primary" href="applicants.html">' + WFApp.icon('inbox') + 'Back to applicants</a>' +
+          '</div>';
+        return;
+      }
+
+      var job = WFApp.job(ap.jobId);
+      var safeName = WFApp.escapeHtml(ap.name);
+
+      var skillsHtml = (ap.skills || []).map(function(s){
+        return '<span class="chip">' + WFApp.escapeHtml(s) + '</span>';
+      }).join('');
+
+      var roleHtml = job
+        ? '<a href="../job-detail.html?id=' + job.id + '">' + WFApp.escapeHtml(job.title) + '</a>'
+        : '<span class="muted">Role no longer available</span>';
+
+      root.innerHTML =
+        '<nav class="breadcrumb" aria-label="Breadcrumb">' +
+          '<a href="applicants.html">Applicants</a>' +
+          WFApp.icon('chevron') +
+          '<span>' + safeName + '</span>' +
+        '</nav>' +
+
+        '<header class="cluster" style="justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:var(--space-8)">' +
+          '<div>' +
+            '<h1 style="margin-bottom:6px">' + safeName + '</h1>' +
+            '<p class="muted" style="margin:0;font-size:16px">' + WFApp.escapeHtml(ap.title) + ' · ' + WFApp.escapeHtml(ap.email) + '</p>' +
+          '</div>' +
+          '<span id="ap-badge">' + WFApp.statusBadge(ap.status) + '</span>' +
+        '</header>' +
+
+        '<div style="display:grid;gap:var(--space-6);grid-template-columns:repeat(auto-fit,minmax(280px,1fr));align-items:start">' +
+
+          '<section class="card" style="min-width:0">' +
+            '<div class="stack">' +
+              '<div>' +
+                '<div class="muted" style="font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Applied to</div>' +
+                '<div style="font-family:var(--font-display);font-weight:700;font-size:18px">' + roleHtml + '</div>' +
+              '</div>' +
+              '<div class="cluster">' +
+                '<span class="badge">' + WFApp.icon('briefcase') + WFApp.escapeHtml(String(ap.experienceYears)) + ' years experience</span>' +
+              '</div>' +
+              '<div>' +
+                '<div class="muted" style="font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px">Skills</div>' +
+                '<div class="cluster">' + (skillsHtml || '<span class="muted">No skills listed</span>') + '</div>' +
+              '</div>' +
+              '<div>' +
+                '<h3>Cover letter</h3>' +
+                '<p class="muted" style="margin:0;line-height:1.6;white-space:pre-line">' + WFApp.escapeHtml(ap.cover) + '</p>' +
+              '</div>' +
+            '</div>' +
+          '</section>' +
+
+          '<aside class="card" style="position:sticky;top:calc(var(--nav-h) + var(--space-6));min-width:0">' +
+            '<h3>Update status</h3>' +
+            '<div class="stack">' +
+              '<button class="btn btn--secondary btn--block" onclick="setApStatus(\'reviewed\',this)">' + WFApp.icon('search') + 'Mark reviewed</button>' +
+              '<button class="btn btn--primary btn--block" onclick="setApStatus(\'accepted\',this)">' + WFApp.icon('check') + 'Accept</button>' +
+              '<button class="btn btn--danger btn--block" onclick="setApStatus(\'rejected\',this)">' + WFApp.icon('x') + 'Reject</button>' +
+            '</div>' +
+          '</aside>' +
+
+        '</div>';
+
+      window.setApStatus = function(status){
+        ap.status = status;
+        var badge = document.getElementById('ap-badge');
+        if(badge){ badge.innerHTML = WFApp.statusBadge(status); }
+        var labels = { reviewed:'Marked as reviewed', accepted:'Applicant accepted', rejected:'Applicant rejected' };
+        WFApp.toast(labels[status] || 'Status updated');
+      };
+    });
+  </script>
+</body>
+</html>
