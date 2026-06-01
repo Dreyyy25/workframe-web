@@ -71,7 +71,7 @@
     var active=document.body.getAttribute('data-active');
     function navlink(key,href,label){ return '<a href="'+link(href)+'"'+(active===key?' aria-current="page"':'')+'>'+label+'</a>'; }
     var right = auth==='guest'
-      ? '<a class="btn btn--ghost btn--sm" href="'+link('login.html')+'">Log in</a><a class="btn btn--primary btn--sm" href="'+link('register.html')+'">Sign up</a>'
+      ? '<span class="topnav__authbar"><a class="btn btn--ghost btn--sm" href="'+link('login.html')+'">Log in</a><a class="btn btn--primary btn--sm" href="'+link('register.html')+'">Sign up</a></span>'
       : '<div class="dropdown"><button class="avatar" aria-label="Account menu" aria-haspopup="true" onclick="WFApp._dd(this)">'+(auth==='company'?'NL':'MO')+'</button>'+
         '<div class="dropdown__menu" hidden>'+
           (auth==='seeker'
@@ -80,9 +80,12 @@
           '<a href="'+link('account/settings.html')+'">'+WFApp.icon('settings')+'Settings</a>'+
           '<button onclick="location.href=\''+link('index.html')+'\'">'+WFApp.icon('logout')+'Log out</button>'+
         '</div></div>';
+    var authMenu = auth==='guest'
+      ? '<a class="topnav__authlink" href="'+link('login.html')+'">Log in</a><a class="topnav__authlink" href="'+link('register.html')+'">Sign up</a>'
+      : '';
     return '<header class="topnav"><div class="container topnav__inner">'+
       '<a class="brand" href="'+link('index.html')+'"><span class="brand__mark"></span>WORKFRAME</a>'+
-      '<nav class="topnav__links" aria-label="Primary">'+navlink('jobs','jobs.html','Find Jobs')+navlink('companies','companies.html','Companies')+navlink('employers','for-employers.html','For Employers')+'</nav>'+
+      '<nav class="topnav__links" aria-label="Primary">'+navlink('jobs','jobs.html','Find Jobs')+navlink('companies','companies.html','Companies')+navlink('employers','for-employers.html','For Employers')+authMenu+'</nav>'+
       '<div class="topnav__right">'+themeToggleHtml()+right+
         '<button class="btn btn--ghost btn--sm nav-toggle" aria-label="Menu" onclick="document.querySelector(\'.topnav__links\').classList.toggle(\'open\')">'+WFApp.icon('menu')+'</button>'+
       '</div></div></header>';
