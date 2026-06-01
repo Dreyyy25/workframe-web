@@ -23,7 +23,8 @@
           <p class="muted" style="margin-bottom:var(--space-8);max-width:560px">Keep your public profile current. These details appear on your company page and on every job you post.</p>
 
           <!-- ===== Details form ===== -->
-          <form class="card" id="profile-form" style="max-width:760px" onsubmit="WFApp_profile.save();return false;">
+          <form class="card" id="profile-form" onsubmit="WFApp_profile.save();return false;">
+            <h2 style="margin:0 0 var(--space-4);font-size:1.25rem">Details</h2>
             <div class="field">
               <label class="field__label" for="cp-name">Company name <span class="req">*</span></label>
               <input class="input" id="cp-name" name="name" required />
@@ -60,22 +61,22 @@
               <p class="field__hint">Shown at the top of your public company page.</p>
             </div>
 
-            <div class="cluster" style="justify-content:flex-end">
+            <div class="form-actions">
               <button class="btn btn--primary" type="submit">Save changes</button>
             </div>
           </form>
 
           <!-- ===== Images section ===== -->
-          <section style="margin-top:var(--space-12);max-width:760px">
+          <section class="card" style="margin-top:var(--space-8)">
             <div class="section-head">
-              <h2 style="margin:0">Images</h2>
+              <h2 style="margin:0;font-size:1.25rem">Images</h2>
               <button class="btn btn--secondary btn--sm" type="button" onclick="WFApp_profile.openUploadModal()">
                 <span aria-hidden="true" data-icon="plus"></span>Upload image
               </button>
             </div>
             <p class="muted" style="margin-top:0">Photos of your office, team or product. These appear in a gallery on your public profile.</p>
 
-            <div class="grid" id="img-grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))" aria-label="Company images"></div>
+            <div class="grid" id="img-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))" aria-label="Company images"></div>
 
             <div class="empty" id="img-empty" hidden>
               <div aria-hidden="true" data-icon="grid"></div>
