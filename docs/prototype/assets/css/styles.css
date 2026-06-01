@@ -99,7 +99,8 @@ p{margin:0 0 1rem;}
 .badge--accepted{color:var(--success);border-color:var(--success);}
 .badge--rejected{color:var(--error);border-color:var(--error);}
 .badge--withdrawn{color:var(--muted);border-color:var(--muted);}
-.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:3px 9px;border-radius:var(--r-sm);border:1.5px solid var(--line);background:transparent;}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:4px 10px;border-radius:var(--r-sm);border:1.5px solid var(--line);background:transparent;white-space:nowrap;}
+.chip svg{width:13px;height:13px;flex-shrink:0;}
 .chip--clickable{cursor:pointer;}
 .chip--clickable:hover{background:var(--surface-2);}
 .chip--active{background:var(--ink);color:var(--bg);}
