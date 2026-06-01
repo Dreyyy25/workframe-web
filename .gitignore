@@ -1,2 +1,7 @@
 # Brainstorming visual companion artifacts
 .superpowers/
+
+# QA / browser-automation artifacts
+.playwright-mcp/
+/landing-*.png
+/qa-*.png
