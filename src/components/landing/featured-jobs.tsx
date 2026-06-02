@@ -1,0 +1,92 @@
+import { useQuery } from '@tanstack/react-query'
+import { ArrowUpRight, MapPin } from 'lucide-react'
+import { getJobLocations, getJobPosts, getJobTypes } from '@/lib/api/public'
+import { money } from '@/lib/format'
+import { SEED_FEATURED, type JobCardData } from '@/lib/seed'
+import { Badge } from '@/components/ui/badge'
+import { Reveal } from '@/components/motion/reveal'
+import { cn } from '@/lib/utils'
+import { buttonVariants } from '@/components/ui/button'
+
+async function loadFeatured(): Promise<JobCardData[]> {
+  const [posts, types, locations] = await Promise.all([
+    getJobPosts({ page_size: 6, ordering: '-created_at' }),
+    getJobTypes(),
+    getJobLocations(),
+  ])
+  const typeName = new Map(types.results.map((t) => [t.id, t.job_type_name]))
+  const locById = new Map(locations.results.map((l) => [l.id, l]))
+  return posts.results.map((p) => {
+    const loc = locById.get(p.job_location)
+    const location = loc
+      ? [loc.city, loc.country && loc.country !== '—' ? loc.country : null].filter(Boolean).join(', ')
+      : '—'
+    return {
+      id: p.id,
+      title: p.job_title,
+      location: location || '—',
+      type: typeName.get(p.job_type) ?? 'Role',
+      salary: money(p.salary_min, p.salary_max, p.salary_type),
+    }
+  })
+}
+
+function JobCard({ job }: { job: JobCardData }) {
+  return (
+    <a
+      href="#"
+      className="group flex h-full flex-col rounded border-2 border-border bg-card p-6 transition-transform duration-150 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hard"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <Badge variant="outline">{job.type}</Badge>
+        <Badge variant="outline">
+          <MapPin />
+          {job.location}
+        </Badge>
+      </div>
+      <h3 className="mt-4 text-lg font-bold leading-snug">{job.title}</h3>
+      {job.company && <div className="mt-0.5 text-sm text-muted-foreground">{job.company}</div>}
+      <div className="mt-5 flex items-center justify-between">
+        {job.salary && <span className="font-display text-base font-extrabold text-primary">{job.salary}</span>}
+        <span className="inline-flex items-center gap-1 font-display text-sm font-bold text-foreground transition-colors group-hover:text-primary">
+          View role <ArrowUpRight className="h-4 w-4" />
+        </span>
+      </div>
+    </a>
+  )
+}
+
+function SkeletonCard() {
+  return (
+    <div className="h-[176px] animate-pulse rounded border-2 border-border bg-muted" aria-hidden="true" />
+  )
+}
+
+export function FeaturedJobs() {
+  const { data, isLoading, isError } = useQuery({ queryKey: ['featured-jobs'], queryFn: loadFeatured })
+  const jobs = isError || !data || data.length === 0 ? SEED_FEATURED : data
+
+  return (
+    <section id="featured" className="border-y-2 border-border bg-muted/40">
+      <div className="mx-auto max-w-content px-4 py-16 sm:px-6">
+        <Reveal>
+          <div className="mb-6 flex items-end justify-between gap-4">
+            <h2 className="text-[clamp(1.5rem,3vw,2.25rem)]">Featured roles</h2>
+            <a href="#" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}>
+              View all
+            </a>
+          </div>
+        </Reveal>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {isLoading
+            ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
+            : jobs.map((job, i) => (
+                <Reveal key={job.id} delay={i * 0.05}>
+                  <JobCard job={job} />
+                </Reveal>
+              ))}
+        </div>
+      </div>
+    </section>
+  )
+}
