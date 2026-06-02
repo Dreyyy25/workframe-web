@@ -4,8 +4,9 @@ import { Reveal } from '@/components/motion/reveal'
 
 export function EmployerCTA() {
   return (
-    <section id="employers" className="mx-auto max-w-content px-4 py-12 sm:px-6">
-      <Reveal>
+    <section id="employers" className="relative">
+      <div className="mx-auto max-w-content px-4 py-12 sm:px-6">
+        <Reveal>
         <div className="flex flex-col items-start justify-between gap-6 rounded border-2 border-border bg-foreground px-8 py-12 text-background sm:flex-row sm:items-center">
           <div>
             <h2 className="text-[clamp(1.5rem,3vw,2.25rem)] text-background">
@@ -19,7 +20,8 @@ export function EmployerCTA() {
             Post a job
           </a>
         </div>
-      </Reveal>
+        </Reveal>
+      </div>
     </section>
   )
 }

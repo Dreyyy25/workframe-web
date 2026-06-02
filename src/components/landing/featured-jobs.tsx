@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Reveal } from '@/components/motion/reveal'
 import { cn } from '@/lib/utils'
 import { buttonVariants } from '@/components/ui/button'
+import { Spotlight, useSpotlight } from '@/components/ui/spotlight'
 
 async function loadFeatured(): Promise<JobCardData[]> {
   const [posts, types, locations] = await Promise.all([
@@ -32,25 +33,31 @@ async function loadFeatured(): Promise<JobCardData[]> {
 }
 
 function JobCard({ job }: { job: JobCardData }) {
+  const { ref, bind } = useSpotlight<HTMLAnchorElement>()
   return (
     <a
+      ref={ref}
+      {...bind}
       href="#"
-      className="group flex h-full flex-col rounded border-2 border-border bg-card p-6 transition-transform duration-150 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hard"
+      className="group relative isolate flex h-full flex-col overflow-hidden rounded border-2 border-border bg-card p-6 transition-transform duration-150 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hard"
     >
-      <div className="flex items-start justify-between gap-3">
-        <Badge variant="outline">{job.type}</Badge>
-        <Badge variant="outline">
-          <MapPin />
-          {job.location}
-        </Badge>
-      </div>
-      <h3 className="mt-4 text-lg font-bold leading-snug">{job.title}</h3>
-      {job.company && <div className="mt-0.5 text-sm text-muted-foreground">{job.company}</div>}
-      <div className="mt-5 flex items-center justify-between">
-        {job.salary && <span className="font-display text-base font-extrabold text-primary">{job.salary}</span>}
-        <span className="inline-flex items-center gap-1 font-display text-sm font-bold text-foreground transition-colors group-hover:text-primary">
-          View role <ArrowUpRight className="h-4 w-4" />
-        </span>
+      <Spotlight />
+      <div className="relative z-10 flex h-full flex-col">
+        <div className="flex items-start justify-between gap-3">
+          <Badge variant="outline">{job.type}</Badge>
+          <Badge variant="outline">
+            <MapPin />
+            {job.location}
+          </Badge>
+        </div>
+        <h3 className="mt-4 text-lg font-bold leading-snug">{job.title}</h3>
+        {job.company && <div className="mt-0.5 text-sm text-muted-foreground">{job.company}</div>}
+        <div className="mt-5 flex items-center justify-between">
+          {job.salary && <span className="font-display text-base font-extrabold text-primary">{job.salary}</span>}
+          <span className="inline-flex items-center gap-1 font-display text-sm font-bold text-foreground transition-colors group-hover:text-primary">
+            View role <ArrowUpRight className="h-4 w-4" />
+          </span>
+        </div>
       </div>
     </a>
   )
@@ -67,7 +74,7 @@ export function FeaturedJobs() {
   const jobs = isError || !data || data.length === 0 ? SEED_FEATURED : data
 
   return (
-    <section id="featured" className="border-y-2 border-border bg-muted/40">
+    <section id="featured" className="relative">
       <div className="mx-auto max-w-content px-4 py-16 sm:px-6">
         <Reveal>
           <div className="mb-6 flex items-end justify-between gap-4">
