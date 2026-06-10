@@ -1,7 +1,27 @@
+import { Link } from 'react-router-dom'
+
 const COLUMNS = [
-  { title: 'For Seekers', links: ['Browse jobs', 'Companies'] },
-  { title: 'For Companies', links: ['Post a job', 'Sign up'] },
-  { title: 'Workframe', links: ['Home', 'About'] },
+  {
+    title: 'For Seekers',
+    links: [
+      { label: 'Browse jobs', to: '/jobs' },
+      { label: 'Companies', to: '/companies' },
+    ],
+  },
+  {
+    title: 'For Companies',
+    links: [
+      { label: 'Post a job', to: '/company/jobs/new' },
+      { label: 'Sign up', to: '/register' },
+    ],
+  },
+  {
+    title: 'Workframe',
+    links: [
+      { label: 'Home', to: '/' },
+      { label: 'For employers', to: '/for-employers' },
+    ],
+  },
 ]
 
 export function SiteFooter() {
@@ -22,10 +42,13 @@ export function SiteFooter() {
             <h4 className="mb-3 font-display text-sm font-bold">{col.title}</h4>
             <ul className="space-y-2">
               {col.links.map((link) => (
-                <li key={link}>
-                  <a href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
-                    {link}
-                  </a>
+                <li key={link.label}>
+                  <Link
+                    to={link.to}
+                    className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    {link.label}
+                  </Link>
                 </li>
               ))}
             </ul>
