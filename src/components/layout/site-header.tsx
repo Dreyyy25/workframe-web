@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { LayoutGrid, LogOut, Menu, User, X } from 'lucide-react'
+import { FileText, LayoutGrid, LogOut, Menu, Settings, User, X } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth/auth-context'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -46,6 +47,20 @@ export function SiteHeader() {
     setOpen(false)
     navigate('/')
   }
+
+  // Account-menu destinations, derived once so the desktop dropdown and the
+  // mobile menu can never drift apart (the mobile menu used to omit these).
+  const accountLinks: { to: string; label: string; icon: LucideIcon }[] = isSeeker
+    ? [
+        { to: '/seeker/dashboard', label: 'Dashboard', icon: LayoutGrid },
+        { to: '/seeker/applications', label: 'My applications', icon: FileText },
+        { to: '/seeker/profile', label: 'Profile', icon: User },
+        { to: '/settings', label: 'Settings', icon: Settings },
+      ]
+    : [
+        { to: '/company/dashboard', label: 'Console', icon: LayoutGrid },
+        { to: '/settings', label: 'Settings', icon: Settings },
+      ]
 
   return (
     <header className="sticky top-0 z-40 border-b-2 border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -107,26 +122,11 @@ export function SiteHeader() {
                   <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                 </div>
                 <DropdownSeparator />
-                {isSeeker ? (
-                  <>
-                    <DropdownLink to="/seeker/dashboard">
-                      <LayoutGrid /> Dashboard
-                    </DropdownLink>
-                    <DropdownLink to="/seeker/applications">
-                      <User /> My applications
-                    </DropdownLink>
-                    <DropdownLink to="/seeker/profile">
-                      <User /> Profile
-                    </DropdownLink>
-                  </>
-                ) : (
-                  <DropdownLink to="/company/dashboard">
-                    <LayoutGrid /> Console
+                {accountLinks.map(({ to, label, icon: Icon }) => (
+                  <DropdownLink key={to} to={to}>
+                    <Icon /> {label}
                   </DropdownLink>
-                )}
-                <DropdownLink to="/settings">
-                  <User /> Settings
-                </DropdownLink>
+                ))}
                 <DropdownSeparator />
                 <DropdownItem onSelect={handleLogout}>
                   <LogOut /> Log out
@@ -180,15 +180,22 @@ export function SiteHeader() {
                 </>
               ) : (
                 <>
-                  <Link
-                    to={isSeeker ? '/seeker/dashboard' : '/company/dashboard'}
-                    onClick={() => setOpen(false)}
-                    className={cn(buttonVariants({ variant: 'outline' }), 'w-full')}
-                  >
-                    {isSeeker ? 'Dashboard' : 'Console'}
-                  </Link>
-                  <Button variant="ghost" onClick={handleLogout} className="w-full">
-                    Log out
+                  <div className="border-t-2 border-border px-2 pb-1 pt-3">
+                    <p className="truncate text-sm font-bold">{user.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                  </div>
+                  {accountLinks.map(({ to, label, icon: Icon }) => (
+                    <Link
+                      key={to}
+                      to={to}
+                      onClick={() => setOpen(false)}
+                      className="flex items-center gap-2.5 rounded px-2 py-2.5 text-[15px] font-semibold text-foreground hover:bg-muted [&_svg]:h-[18px] [&_svg]:w-[18px] [&_svg]:text-muted-foreground"
+                    >
+                      <Icon /> {label}
+                    </Link>
+                  ))}
+                  <Button variant="outline" onClick={handleLogout} className="mt-1 w-full">
+                    <LogOut className="h-4 w-4" /> Log out
                   </Button>
                 </>
               )}
