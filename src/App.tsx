@@ -1,7 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { MotionConfig } from 'framer-motion'
+import { BrowserRouter } from 'react-router-dom'
 import { ThemeProvider } from '@/components/theme/theme-provider'
-import Landing from '@/pages/landing'
+import { AuthProvider } from '@/lib/auth/auth-context'
+import { ToastProvider } from '@/components/ui/toast'
+import { ScrollToTop } from '@/components/layout/scroll-to-top'
+import { AppRoutes } from '@/router'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -13,11 +17,16 @@ export default function App() {
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Landing />} />
-          </Routes>
-        </BrowserRouter>
+        <AuthProvider>
+          <ToastProvider>
+            <MotionConfig reducedMotion="user">
+              <BrowserRouter>
+                <ScrollToTop />
+                <AppRoutes />
+              </BrowserRouter>
+            </MotionConfig>
+          </ToastProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>
   )
