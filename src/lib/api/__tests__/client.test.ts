@@ -62,6 +62,18 @@ describe('ApiError normalization', () => {
     expect(err.message).toBe('user account with this email already exists.')
   })
 
+  it('normalizes DRF list-style error bodies without inventing field errors', async () => {
+    server.use(
+      http.post('*/api/v1/jobs/apply/', () =>
+        HttpResponse.json(['You have already applied to this job.'], { status: 400 }),
+      ),
+    )
+    const err = (await apiPost('/jobs/apply/', { body: {} }).catch((e: unknown) => e)) as ApiError
+    expect(err.status).toBe(400)
+    expect(err.message).toBe('You have already applied to this job.')
+    expect(err.fieldErrors).toEqual({})
+  })
+
   it('falls back to a generic message for non-JSON bodies', async () => {
     server.use(
       http.get('*/api/v1/thing/', () =>
@@ -132,6 +144,32 @@ describe('request building', () => {
     await apiPost('/accounts/login/', { body: { email: 'a@b.co', password: 'x' } })
     expect(contentType).toContain('application/json')
     expect(body).toEqual({ email: 'a@b.co', password: 'x' })
+  })
+
+  it('serializes boolean false and zero params instead of dropping them', async () => {
+    let seenUrl = ''
+    server.use(
+      http.get('*/api/v1/jobs/job-posts/', ({ request }) => {
+        seenUrl = request.url
+        return HttpResponse.json({ count: 0, next: null, previous: null, results: [] })
+      }),
+    )
+    await apiGet('/jobs/job-posts/', { is_published: false, page: 0 })
+    const url = new URL(seenUrl)
+    expect(url.searchParams.get('is_published')).toBe('false')
+    expect(url.searchParams.get('page')).toBe('0')
+  })
+
+  it("sends credentials: 'include' so the refresh cookie always travels", async () => {
+    let credentials = ''
+    server.use(
+      http.get('*/api/v1/thing/', ({ request }) => {
+        credentials = request.credentials
+        return HttpResponse.json({ ok: true })
+      }),
+    )
+    await apiGet('/thing/')
+    expect(credentials).toBe('include')
   })
 
   it('resolves empty 205 responses without a JSON parse error', async () => {

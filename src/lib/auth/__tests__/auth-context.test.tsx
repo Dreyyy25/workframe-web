@@ -5,7 +5,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { http, HttpResponse } from 'msw'
+import { delay, http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import {
   ACCESS_TOKEN,
@@ -55,6 +55,47 @@ describe('bootstrap', () => {
     const { result } = renderHook(() => useAuth(), { wrapper })
     await waitFor(() => expect(result.current.isLoading).toBe(false))
     expect(result.current.user).toBeNull()
+  })
+
+  it('resolves logged-out and clears the access token when /me/ fails after a good refresh', async () => {
+    let authHeader: string | null = 'sentinel'
+    server.use(
+      http.get('*/api/v1/accounts/me/', () =>
+        HttpResponse.json({ detail: 'boom' }, { status: 500 }),
+      ),
+      http.get('*/api/v1/echo/', ({ request }) => {
+        authHeader = request.headers.get('authorization')
+        return HttpResponse.json({ ok: true })
+      }),
+    )
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    expect(result.current.user).toBeNull()
+
+    // the token from the successful refresh must not linger for a "guest"
+    await apiGet('/echo/')
+    expect(authHeader).toBeNull()
+  })
+
+  it('a slow failing bootstrap does not clobber a login that completed meanwhile', async () => {
+    server.use(
+      http.post('*/api/v1/accounts/token/refresh/', async () => {
+        await delay(150)
+        return HttpResponse.json({ detail: 'Refresh token cookie not found.' }, { status: 401 })
+      }),
+    )
+    const { result } = renderHook(() => useAuth(), { wrapper })
+
+    // login while the bootstrap refresh is still in flight
+    await act(async () => {
+      await result.current.login('ava@example.com', 'hunter22hunter22')
+    })
+    expect(result.current.user).not.toBeNull()
+
+    // bootstrap settles later; the fresh session must survive its catch
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    expect(result.current.user).not.toBeNull()
+    expect(result.current.user?.email).toBe('ava@example.com')
   })
 })
 
@@ -176,6 +217,85 @@ describe('register', () => {
     expect(result.current.isCompany).toBe(true)
   })
 
+  it('registers a company without a stream by omitting business_stream from the PATCH', async () => {
+    noSession()
+    let patchBody: unknown = null
+    server.use(
+      http.post('*/api/v1/accounts/register/', () =>
+        HttpResponse.json(
+          {
+            message: 'User created successfully',
+            user: companyAuthUser,
+            tokens: { access: ACCESS_TOKEN },
+            profile: {
+              id: COMPANY_PROFILE_ID,
+              user_account: companyAuthUser.id,
+              company_name: '',
+              business_stream: STREAM_ID,
+              profile_description: '',
+              company_website_url: '',
+              contact_email: '',
+              status: 'active',
+              created_at: '2026-08-01T10:00:00Z',
+              updated_at: '2026-08-01T10:00:00Z',
+            },
+          },
+          { status: 201 },
+        ),
+      ),
+      http.patch('*/api/v1/companies/profile/:id/', async ({ request }) => {
+        patchBody = await request.json()
+        return HttpResponse.json({})
+      }),
+    )
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+    await act(async () => {
+      await result.current.register({
+        type: 'company',
+        email: 'team@northwind.dev',
+        password: 'hunter22hunter22',
+        companyName: 'Northwind Labs',
+      })
+    })
+    expect(patchBody).toEqual({ company_name: 'Northwind Labs' })
+    expect(result.current.user?.name).toBe('Northwind Labs')
+  })
+
+  it('treats a company register response without a profile as a partial failure', async () => {
+    noSession()
+    server.use(
+      http.post('*/api/v1/accounts/register/', () =>
+        HttpResponse.json(
+          {
+            message: 'User created successfully',
+            user: companyAuthUser,
+            tokens: { access: ACCESS_TOKEN },
+            profile: null,
+          },
+          { status: 201 },
+        ),
+      ),
+    )
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+    await act(async () => {
+      await expect(
+        result.current.register({
+          type: 'company',
+          email: 'team@northwind.dev',
+          password: 'hunter22hunter22',
+          companyName: 'Northwind Labs',
+          businessStreamId: STREAM_ID,
+        }),
+      ).rejects.toBeInstanceOf(ProfileSaveError)
+    })
+    expect(result.current.user).not.toBeNull()
+    expect(result.current.user?.name).toBe('team@northwind.dev')
+  })
+
   it('still logs the user in (email name) and throws ProfileSaveError when the PATCH fails', async () => {
     noSession()
     server.use(
@@ -232,6 +352,22 @@ describe('logout', () => {
       await result.current.logout()
     })
     expect(result.current.user).toBeNull()
+  })
+
+  it('tears the session down locally even while the logout request hangs', async () => {
+    server.use(
+      http.post('*/api/v1/accounts/logout/', async () => {
+        await delay('infinite')
+        return new HttpResponse(null, { status: 205 })
+      }),
+    )
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.user).not.toBeNull())
+
+    act(() => {
+      void result.current.logout()
+    })
+    await waitFor(() => expect(result.current.user).toBeNull(), { timeout: 1000 })
   })
 })
 

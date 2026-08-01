@@ -80,6 +80,11 @@ export class ApiError extends Error {
     if (typeof body !== 'object' || body === null) {
       return { message: fallback, fieldErrors: {} }
     }
+    // DRF list-style ValidationError: ["You have already applied..."]
+    if (Array.isArray(body)) {
+      const first = body.find((v) => typeof v === 'string') as string | undefined
+      return { message: first ?? fallback, fieldErrors: {} }
+    }
     const record = body as Record<string, unknown>
     if (typeof record.detail === 'string') {
       return { message: record.detail, fieldErrors: {} }
@@ -121,22 +126,36 @@ const REFRESH_PATH = '/accounts/token/refresh/'
 
 let refreshPromise: Promise<string> | null = null
 
+async function postRefresh(): Promise<string> {
+  const data = await apiFetch<{ access: string }>(REFRESH_PATH, {
+    method: 'POST',
+    auth: false,
+  })
+  setAccessToken(data.access)
+  return data.access
+}
+
 /**
  * POST /accounts/token/refresh/ exactly once no matter how many callers ask
  * concurrently (the backend rotates + blacklists refresh tokens, so parallel
  * refreshes would kill each other). Stores the new access token on success.
  * Also used directly by the AuthProvider bootstrap.
+ *
+ * Cross-tab: the module-level promise only dedupes within one tab, but the
+ * refresh cookie jar is shared, so two tabs refreshing at once would race the
+ * rotation and the loser would be logged out holding a blacklisted token.
+ * A Web Lock serializes the tabs — the loser then refreshes with the already
+ * rotated cookie and succeeds.
  */
 export function refreshAccessToken(): Promise<string> {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       try {
-        const data = await apiFetch<{ access: string }>(REFRESH_PATH, {
-          method: 'POST',
-          auth: false,
-        })
-        setAccessToken(data.access)
-        return data.access
+        const locks = typeof navigator !== 'undefined' ? navigator.locks : undefined
+        if (locks) {
+          return await locks.request('workframe-token-refresh', postRefresh)
+        }
+        return await postRefresh()
       } finally {
         refreshPromise = null
       }
@@ -185,14 +204,29 @@ export async function apiFetch<T>(path: string, opts: ApiFetchOptions = {}): Pro
   const parsed = await parseBody(res)
   if (!res.ok) {
     const error = new ApiError(res.status, parsed)
+    // Refresh only when a session plausibly exists: this request carried a
+    // token, or a refresh is already in flight (a query racing the bootstrap
+    // joins it instead of dying). A guest's tokenless 401 is a real answer.
     const refreshable =
-      res.status === 401 && auth && !_isRetry && path !== REFRESH_PATH
+      res.status === 401 &&
+      auth &&
+      !_isRetry &&
+      path !== REFRESH_PATH &&
+      ('Authorization' in headers || refreshPromise !== null)
     if (refreshable) {
       try {
         await refreshAccessToken()
-      } catch {
-        clearAccessToken()
-        notifySessionExpired()
+      } catch (refreshErr) {
+        // Only an auth verdict from the refresh endpoint (cookie dead) ends
+        // the session. Transient failures (429 throttle, 5xx, network) must
+        // not log the user out — rethrow and let the caller retry later.
+        if (
+          refreshErr instanceof ApiError &&
+          (refreshErr.status === 401 || refreshErr.status === 400)
+        ) {
+          clearAccessToken()
+          notifySessionExpired()
+        }
         throw error
       }
       return apiFetch<T>(path, { ...opts, _isRetry: true })

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { ACCESS_TOKEN, seekerAuthUser } from '@/test/msw/fixtures'
-import { ApiError, clearAccessToken } from '../client'
+import { ApiError, clearAccessToken, setAccessToken } from '../client'
 import { getMe, login, logout, register } from '../auth'
 
 beforeEach(() => clearAccessToken())
@@ -55,10 +55,12 @@ describe('auth api', () => {
   })
 
   it('logout resolves on an empty 205', async () => {
+    setAccessToken(ACCESS_TOKEN)
     await expect(logout()).resolves.toBeUndefined()
   })
 
   it('getMe returns the account payload', async () => {
+    setAccessToken(ACCESS_TOKEN)
     const me = await getMe()
     expect(me.id).toBe(seekerAuthUser.id)
     expect(me.user_type).toBe('job_seeker')

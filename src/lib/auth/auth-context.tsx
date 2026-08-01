@@ -59,7 +59,8 @@ export type RegisterFormInput =
       email: string
       password: string
       companyName: string
-      businessStreamId: string
+      /** Absent when streams couldn't load — the backend keeps its default. */
+      businessStreamId?: string
     }
 
 interface AuthValue {
@@ -78,6 +79,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const bootstrapped = useRef(false)
+  // Bumped whenever login/register/logout establishes newer session state, so
+  // a slow bootstrap that settles afterwards can tell its result is stale and
+  // must not clobber the fresh session.
+  const sessionGen = useRef(0)
 
   useEffect(() => {
     // Re-registered on every (Strict Mode) mount; the client fires this only
@@ -95,12 +100,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!bootstrapped.current) {
       bootstrapped.current = true
       void (async () => {
+        const gen = sessionGen.current
         try {
           await refreshAccessToken()
           const me = await authApi.getMe()
-          setUser(await buildSessionUser({ id: me.id, email: me.email, user_type: me.user_type }))
+          const sessionUser = await buildSessionUser({
+            id: me.id,
+            email: me.email,
+            user_type: me.user_type,
+          })
+          if (gen === sessionGen.current) setUser(sessionUser)
         } catch {
-          setUser(null)
+          if (gen === sessionGen.current) {
+            // Don't leave an orphaned access token (refresh ok, /me/ failed)
+            // lying around for a "guest" session.
+            clearAccessToken()
+            setUser(null)
+          }
         } finally {
           setIsLoading(false)
         }
@@ -112,6 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await authApi.login(email, password)
+    sessionGen.current++
     setAccessToken(res.tokens.access)
     const sessionUser = await buildSessionUser(res.user)
     setUser(sessionUser)
@@ -124,6 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password: input.password,
       user_type: input.type,
     })
+    sessionGen.current++
     setAccessToken(res.tokens.access)
 
     const finish = (name: string): SessionUser => {
@@ -147,7 +165,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const companyId = (res.profile as CompanyProfile | null)?.id
       if (!companyId) throw new Error('register response carried no company profile')
       await apiPatch(`/companies/profile/${companyId}/`, {
-        body: { company_name: input.companyName, business_stream: input.businessStreamId },
+        body: {
+          company_name: input.companyName,
+          // Omitted when streams couldn't load; the signal-assigned default
+          // ("Uncategorized") stays until the profile is edited.
+          ...(input.businessStreamId ? { business_stream: input.businessStreamId } : {}),
+        },
       })
       return finish(input.companyName.trim())
     } catch (err) {
@@ -159,13 +182,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const logout = useCallback(async () => {
+    // apiFetch captures the Authorization header synchronously, so the local
+    // teardown right after dispatch can't strip the token off this request.
+    // Local teardown must never wait on the network (header logout is
+    // fire-and-forget) — the UI flips immediately even if the call hangs.
+    const request = authApi.logout()
+    sessionGen.current++
+    clearAccessToken()
+    setUser(null)
     try {
-      await authApi.logout()
+      await request
     } catch {
       // Best effort — the cookie may already be dead; local teardown matters.
     }
-    clearAccessToken()
-    setUser(null)
   }, [])
 
   const value = useMemo<AuthValue>(

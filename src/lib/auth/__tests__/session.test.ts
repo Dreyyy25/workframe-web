@@ -3,13 +3,17 @@ import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import {
   companyAuthUser,
+  companyDashboard,
   seekerAuthUser,
   seekerProfile,
 } from '@/test/msw/fixtures'
-import { clearAccessToken } from '@/lib/api/client'
+import { setAccessToken } from '@/lib/api/client'
 import { buildSessionUser } from '../session'
+import { ACCESS_TOKEN } from '@/test/msw/fixtures'
 
-beforeEach(() => clearAccessToken())
+// buildSessionUser always runs with a live access token (right after a
+// login/refresh stored one) — mirror that.
+beforeEach(() => setAccessToken(ACCESS_TOKEN))
 
 describe('buildSessionUser', () => {
   it('derives a seeker name from the seeker profile', async () => {
@@ -50,5 +54,25 @@ describe('buildSessionUser', () => {
     )
     const user = await buildSessionUser(seekerAuthUser)
     expect(user.name).toBe('ava@example.com')
+  })
+
+  it('falls back to the email when the company dashboard fetch fails', async () => {
+    server.use(
+      http.get('*/api/v1/companies/dashboard/:id/', () =>
+        HttpResponse.json({ error: 'boom' }, { status: 500 }),
+      ),
+    )
+    const user = await buildSessionUser(companyAuthUser)
+    expect(user.name).toBe('team@northwind.dev')
+  })
+
+  it('falls back to the email when the company name is blank (fresh registration)', async () => {
+    server.use(
+      http.get('*/api/v1/companies/dashboard/:id/', () =>
+        HttpResponse.json(companyDashboard({ company: { ...companyDashboard().company, company_name: '' } })),
+      ),
+    )
+    const user = await buildSessionUser(companyAuthUser)
+    expect(user.name).toBe('team@northwind.dev')
   })
 })
