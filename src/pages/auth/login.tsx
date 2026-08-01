@@ -2,30 +2,45 @@ import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '@/lib/auth/auth-context'
-import type { UserType } from '@/lib/mock/types'
+import { ApiError } from '@/lib/api/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
+function loginErrorMessage(err: unknown): string {
+  if (err instanceof ApiError) {
+    if (err.status === 401) return 'Invalid email or password.'
+    if (err.status === 429) return 'Too many attempts — try again in a minute.'
+    return err.message
+  }
+  return 'Something went wrong. Check your connection and try again.'
+}
+
 export default function Login() {
-  const { login, loginDemo } = useAuth()
+  const { login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const from = (location.state as { from?: string } | null)?.from ?? '/seeker/dashboard'
+  const from = (location.state as { from?: string } | null)?.from
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState('')
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault()
-    login(email, password)
-    navigate(from, { replace: true })
-  }
-
-  const demo = (role: UserType) => {
-    loginDemo(role)
-    navigate(role === 'company' ? '/company/dashboard' : from, { replace: true })
+    setPending(true)
+    setError('')
+    try {
+      const user = await login(email, password)
+      const home = user.type === 'company' ? '/company/dashboard' : '/seeker/dashboard'
+      navigate(from ?? home, { replace: true })
+    } catch (err) {
+      setError(loginErrorMessage(err))
+    } finally {
+      setPending(false)
+    }
   }
 
   return (
@@ -61,6 +76,7 @@ export default function Login() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••••"
               className="pr-11"
+              aria-invalid={Boolean(error)}
               required
             />
             <button
@@ -73,9 +89,14 @@ export default function Login() {
               {showPw ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
             </button>
           </div>
+          {error && (
+            <p className="mt-1.5 text-sm font-medium text-destructive" role="alert">
+              {error}
+            </p>
+          )}
         </div>
-        <Button type="submit" className="w-full">
-          Log in
+        <Button type="submit" className="w-full" disabled={pending}>
+          {pending ? 'Logging in…' : 'Log in'}
         </Button>
       </form>
 
@@ -85,21 +106,6 @@ export default function Login() {
           Create one
         </Link>
       </p>
-
-      <div className="my-6 flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        <span className="h-px flex-1 bg-border/40" />
-        or
-        <span className="h-px flex-1 bg-border/40" />
-      </div>
-
-      <div className="space-y-2">
-        <Button variant="outline" className="w-full" onClick={() => demo('job_seeker')}>
-          Continue as demo Seeker
-        </Button>
-        <Button variant="outline" className="w-full" onClick={() => demo('company')}>
-          Continue as demo Company
-        </Button>
-      </div>
     </div>
   )
 }

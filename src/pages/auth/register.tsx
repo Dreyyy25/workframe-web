@@ -1,15 +1,36 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
-import { useAuth } from '@/lib/auth/auth-context'
+import { useQuery } from '@tanstack/react-query'
+import { ProfileSaveError, useAuth } from '@/lib/auth/auth-context'
+import { ApiError } from '@/lib/api/client'
+import { getBusinessStreams } from '@/lib/api/public'
 import { useToast } from '@/components/ui/toast'
-import { BUSINESS_STREAMS } from '@/lib/mock/data'
 import type { UserType } from '@/lib/mock/types'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
+
+interface FieldErrors {
+  email?: string
+  password?: string
+  general?: string
+}
+
+function registerErrors(err: unknown): FieldErrors {
+  if (err instanceof ApiError) {
+    if (err.status === 429) return { general: 'Too many attempts — try again in a minute.' }
+    const fields: FieldErrors = {
+      email: err.fieldErrors.email?.join(' '),
+      password: err.fieldErrors.password?.join(' '),
+    }
+    if (!fields.email && !fields.password) fields.general = err.message
+    return fields
+  }
+  return { general: 'Something went wrong. Check your connection and try again.' }
+}
 
 export default function Register() {
   const { register } = useAuth()
@@ -20,23 +41,59 @@ export default function Register() {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [companyName, setCompanyName] = useState('')
-  const [stream, setStream] = useState<string>(BUSINESS_STREAMS[0])
+  const [streamId, setStreamId] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
-  const [error, setError] = useState('')
+  const [pending, setPending] = useState(false)
+  const [errors, setErrors] = useState<FieldErrors>({})
 
-  const submit = (e: React.FormEvent) => {
+  const streamsQuery = useQuery({
+    queryKey: ['business-streams'],
+    queryFn: () => getBusinessStreams(),
+    enabled: role === 'company',
+  })
+  const streams = streamsQuery.data?.results ?? []
+  const selectedStreamId = streamId || streams[0]?.id || ''
+
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (password.length < 10) {
-      setError('Password must be at least 10 characters.')
+      setErrors({ password: 'Password must be at least 10 characters.' })
       return
     }
-    setError('')
-    const name = role === 'company' ? companyName : `${firstName} ${lastName}`.trim()
-    register({ type: role, name: name || 'New user', email })
-    toast('Account created — welcome to Workframe!')
-    navigate(role === 'company' ? '/company/dashboard' : '/seeker/dashboard', { replace: true })
+    if (role === 'company' && !selectedStreamId) {
+      setErrors({ general: 'Business streams are still loading — try again in a moment.' })
+      return
+    }
+    setErrors({})
+    setPending(true)
+    const home = role === 'company' ? '/company/dashboard' : '/seeker/dashboard'
+    try {
+      await register(
+        role === 'company'
+          ? {
+              type: 'company',
+              email,
+              password,
+              companyName,
+              businessStreamId: selectedStreamId,
+            }
+          : { type: 'job_seeker', email, password, firstName, lastName },
+      )
+      toast('Account created — welcome to Workframe!')
+      navigate(home, { replace: true })
+    } catch (err) {
+      if (err instanceof ProfileSaveError) {
+        // The account and session are live; only the name save failed.
+        toast('Account created — we couldn’t save your name, update it in your profile.')
+        navigate(home, { replace: true })
+        return
+      }
+      setErrors(registerErrors(err))
+    } finally {
+      setPending(false)
+    }
   }
 
   return (
@@ -103,12 +160,21 @@ export default function Register() {
               <Label htmlFor="stream" required>
                 Business stream
               </Label>
-              <Select id="stream" value={stream} onChange={(e) => setStream(e.target.value)}>
-                {BUSINESS_STREAMS.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
+              <Select
+                id="stream"
+                value={selectedStreamId}
+                onChange={(e) => setStreamId(e.target.value)}
+                disabled={streamsQuery.isLoading}
+              >
+                {streamsQuery.isLoading ? (
+                  <option value="">Loading…</option>
+                ) : (
+                  streams.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.business_stream_name}
+                    </option>
+                  ))
+                )}
               </Select>
             </div>
           </>
@@ -125,8 +191,14 @@ export default function Register() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
+            aria-invalid={Boolean(errors.email)}
             required
           />
+          {errors.email && (
+            <p className="mt-1.5 text-sm font-medium text-destructive" role="alert">
+              {errors.email}
+            </p>
+          )}
         </div>
 
         <div>
@@ -141,7 +213,7 @@ export default function Register() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="pr-11"
-              aria-invalid={Boolean(error)}
+              aria-invalid={Boolean(errors.password)}
               required
             />
             <button
@@ -154,15 +226,23 @@ export default function Register() {
               {showPw ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
             </button>
           </div>
-          {error ? (
-            <p className="mt-1.5 text-sm font-medium text-destructive">{error}</p>
+          {errors.password ? (
+            <p className="mt-1.5 text-sm font-medium text-destructive" role="alert">
+              {errors.password}
+            </p>
           ) : (
             <p className="mt-1.5 text-xs text-muted-foreground">At least 10 characters.</p>
           )}
         </div>
 
-        <Button type="submit" className="w-full">
-          Create account
+        {errors.general && (
+          <p className="text-sm font-medium text-destructive" role="alert">
+            {errors.general}
+          </p>
+        )}
+
+        <Button type="submit" className="w-full" disabled={pending}>
+          {pending ? 'Creating account…' : 'Create account'}
         </Button>
       </form>
 
