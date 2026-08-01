@@ -18,6 +18,22 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,
+        // A live Django admin session on localhost:8000 would ride along and
+        // trip DRF's SessionAuthentication CSRF check on our POSTs. The API
+        // only ever needs the refresh cookie — strip Django's session pair.
+        configure(proxy) {
+          proxy.on('proxyReq', (proxyReq) => {
+            const cookie = proxyReq.getHeader('cookie')
+            if (typeof cookie === 'string') {
+              const kept = cookie
+                .split(/;\s*/)
+                .filter((p) => !p.startsWith('sessionid=') && !p.startsWith('csrftoken='))
+                .join('; ')
+              if (kept) proxyReq.setHeader('cookie', kept)
+              else proxyReq.removeHeader('cookie')
+            }
+          })
+        },
       },
     },
   },

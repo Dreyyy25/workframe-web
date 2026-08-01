@@ -39,7 +39,7 @@ function initials(name: string) {
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false)
-  const { user, isSeeker, logout } = useAuth()
+  const { user, isLoading, isSeeker, logout } = useAuth()
   const navigate = useNavigate()
 
   const handleLogout = () => {
@@ -87,7 +87,16 @@ export function SiteHeader() {
         <div className="flex items-center gap-3">
           <ThemeToggle />
 
-          {!user && (
+          {/* While the session bootstrap runs, show neither guest CTAs nor the
+              avatar — a logged-in user reloading shouldn't flash "Log in". */}
+          {isLoading && (
+            <span
+              className="hidden h-10 w-10 animate-pulse rounded-[5px] bg-muted sm:block"
+              aria-hidden="true"
+            />
+          )}
+
+          {!isLoading && !user && (
             <>
               <Link
                 to="/login"
@@ -161,7 +170,7 @@ export function SiteHeader() {
               </Link>
             ))}
             <div className="mt-2 flex flex-col gap-2">
-              {!user ? (
+              {isLoading ? null : !user ? (
                 <>
                   <Link
                     to="/login"

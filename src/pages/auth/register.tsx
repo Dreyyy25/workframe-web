@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { ProfileSaveError, useAuth } from '@/lib/auth/auth-context'
-import { ApiError } from '@/lib/api/client'
+import { registerErrors } from './auth-errors'
+import type { RegisterFieldErrors } from './auth-errors'
 import { getBusinessStreams } from '@/lib/api/public'
 import { useToast } from '@/components/ui/toast'
 import type { UserType } from '@/lib/mock/types'
@@ -12,25 +13,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
-
-interface FieldErrors {
-  email?: string
-  password?: string
-  general?: string
-}
-
-function registerErrors(err: unknown): FieldErrors {
-  if (err instanceof ApiError) {
-    if (err.status === 429) return { general: 'Too many attempts — try again in a minute.' }
-    const fields: FieldErrors = {
-      email: err.fieldErrors.email?.join(' '),
-      password: err.fieldErrors.password?.join(' '),
-    }
-    if (!fields.email && !fields.password) fields.general = err.message
-    return fields
-  }
-  return { general: 'Something went wrong. Check your connection and try again.' }
-}
 
 export default function Register() {
   const { register } = useAuth()
@@ -46,7 +28,7 @@ export default function Register() {
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [pending, setPending] = useState(false)
-  const [errors, setErrors] = useState<FieldErrors>({})
+  const [errors, setErrors] = useState<RegisterFieldErrors>({})
 
   const streamsQuery = useQuery({
     queryKey: ['business-streams'],
@@ -62,7 +44,7 @@ export default function Register() {
       setErrors({ password: 'Password must be at least 10 characters.' })
       return
     }
-    if (role === 'company' && !selectedStreamId) {
+    if (role === 'company' && !selectedStreamId && streamsQuery.isLoading) {
       setErrors({ general: 'Business streams are still loading — try again in a moment.' })
       return
     }
@@ -77,7 +59,9 @@ export default function Register() {
               email,
               password,
               companyName,
-              businessStreamId: selectedStreamId,
+              // Streams failed to load / list empty: register anyway; the
+              // backend keeps its default and the stream is editable later.
+              businessStreamId: selectedStreamId || undefined,
             }
           : { type: 'job_seeker', email, password, firstName, lastName },
       )
@@ -164,7 +148,7 @@ export default function Register() {
                 id="stream"
                 value={selectedStreamId}
                 onChange={(e) => setStreamId(e.target.value)}
-                disabled={streamsQuery.isLoading}
+                disabled={streamsQuery.isLoading || streamsQuery.isError}
               >
                 {streamsQuery.isLoading ? (
                   <option value="">Loading…</option>
@@ -176,6 +160,19 @@ export default function Register() {
                   ))
                 )}
               </Select>
+              {streamsQuery.isError && (
+                <p className="mt-1.5 text-sm font-medium text-destructive" role="alert">
+                  Couldn’t load business streams — you can still sign up and pick one later, or{' '}
+                  <button
+                    type="button"
+                    onClick={() => streamsQuery.refetch()}
+                    className="font-semibold underline underline-offset-2"
+                  >
+                    retry now
+                  </button>
+                  .
+                </p>
+              )}
             </div>
           </>
         )}

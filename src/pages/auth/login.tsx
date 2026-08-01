@@ -2,19 +2,10 @@ import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '@/lib/auth/auth-context'
-import { ApiError } from '@/lib/api/client'
+import { loginErrorMessage } from './auth-errors'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-
-function loginErrorMessage(err: unknown): string {
-  if (err instanceof ApiError) {
-    if (err.status === 401) return 'Invalid email or password.'
-    if (err.status === 429) return 'Too many attempts — try again in a minute.'
-    return err.message
-  }
-  return 'Something went wrong. Check your connection and try again.'
-}
 
 export default function Login() {
   const { login } = useAuth()

@@ -115,7 +115,22 @@ curl -i -b jar.txt -c jar.txt -X POST http://localhost:8000/api/v1/accounts/toke
 - [ ] `uv run python manage.py test` fully green, including rewritten logout tests and new `CookieAuthTests`.
 - [ ] OpenAPI schema (`/api/schema/`) no longer lists `tokens.refresh`.
 
-## 7. Conventions
+## 7. Follow-up found during frontend integration review (2026-08-01)
+
+**Status of §1–§6: DONE on `staging`** (commits `83e5f1f`…`8b6923a`) and verified end-to-end
+from the frontend. One additional pre-existing issue surfaced by the review:
+
+- **`JobLocationViewSet` requires authentication for reads** (`apps/jobs/views.py`,
+  `permission_classes = [IsAuthenticated]`) even though its docstring says "Everyone can
+  view locations", and every sibling reference endpoint (job-types, business-streams,
+  job-posts) allows anonymous reads. Effect: the frontend landing page's featured-jobs
+  query (`GET /api/v1/jobs/job-locations/`) 401s for logged-out visitors, so anonymous
+  users only ever see seed fallback content. Fix: change to
+  `permission_classes = [IsAuthenticatedOrReadOnly]` (matches the docstring — everyone
+  reads, authenticated users create) + a small test asserting anonymous GET returns 200.
+  Needed before frontend Slice 2 (public browse on real data).
+
+## 8. Conventions
 
 - Work on a feature branch (e.g. `feat/refresh-cookie-auth`), conventional commits (`feat(accounts): ...`, `test(accounts): ...`).
 - Do **not** add a `Co-Authored-By: Claude` trailer to commits.

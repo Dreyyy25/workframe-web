@@ -38,8 +38,31 @@ export const handlers = [
   http.post('*/api/v1/accounts/token/refresh/', () =>
     HttpResponse.json({ access: ROTATED_ACCESS_TOKEN }, { status: 200 }),
   ),
-  http.post('*/api/v1/accounts/logout/', () => new HttpResponse(null, { status: 205 })),
-  http.get('*/api/v1/accounts/me/', () => HttpResponse.json(seekerAccount())),
-  http.get('*/api/v1/seekers/profiles/:id/', () => HttpResponse.json(seekerProfile())),
-  http.get('*/api/v1/companies/dashboard/:id/', () => HttpResponse.json(companyDashboard())),
+  http.post('*/api/v1/accounts/logout/', ({ request }) =>
+    denyUnlessAuthed(request) ?? new HttpResponse(null, { status: 205 }),
+  ),
+  http.get('*/api/v1/accounts/me/', ({ request }) =>
+    denyUnlessAuthed(request) ?? HttpResponse.json(seekerAccount()),
+  ),
+  http.get('*/api/v1/seekers/profiles/:id/', ({ request }) =>
+    denyUnlessAuthed(request) ?? HttpResponse.json(seekerProfile()),
+  ),
+  http.get('*/api/v1/companies/dashboard/:id/', ({ request }) =>
+    denyUnlessAuthed(request) ?? HttpResponse.json(companyDashboard()),
+  ),
 ]
+
+/**
+ * Protected endpoints reject requests without a known Bearer token, exactly
+ * like the real API — otherwise a client bug that drops the Authorization
+ * header would sail through every test.
+ */
+const AUTHED = new Set([`Bearer ${ACCESS_TOKEN}`, `Bearer ${ROTATED_ACCESS_TOKEN}`])
+
+function denyUnlessAuthed(request: Request) {
+  if (AUTHED.has(request.headers.get('authorization') ?? '')) return null
+  return HttpResponse.json(
+    { detail: 'Authentication credentials were not provided.' },
+    { status: 401 },
+  )
+}
