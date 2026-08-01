@@ -21,10 +21,33 @@ let accessToken: string | null = null
 
 export function setAccessToken(token: string): void {
   accessToken = token
+  sessionExpiredNotified = false
 }
 
 export function clearAccessToken(): void {
   accessToken = null
+}
+
+// --- session-expiry notification -------------------------------------------
+
+/**
+ * Registered by AuthProvider at mount. Fired (once per session) only when an
+ * authorized request 401s AND the follow-up refresh fails — i.e. a session
+ * that existed has died. Direct refreshAccessToken() failures (bootstrap of
+ * a logged-out visitor) do NOT fire it.
+ */
+let onSessionExpired: (() => void) | null = null
+let sessionExpiredNotified = false
+
+export function setOnSessionExpired(cb: (() => void) | null): void {
+  onSessionExpired = cb
+  sessionExpiredNotified = false
+}
+
+function notifySessionExpired(): void {
+  if (sessionExpiredNotified) return
+  sessionExpiredNotified = true
+  onSessionExpired?.()
 }
 
 // --- error normalization ---------------------------------------------------
@@ -88,6 +111,38 @@ export interface ApiFetchOptions {
   params?: Params
   /** Attach the in-memory access token (default true when one is set). */
   auth?: boolean
+  /** Internal: marks the one-shot retry after a silent refresh. */
+  _isRetry?: boolean
+}
+
+// --- single-flight refresh -------------------------------------------------
+
+const REFRESH_PATH = '/accounts/token/refresh/'
+
+let refreshPromise: Promise<string> | null = null
+
+/**
+ * POST /accounts/token/refresh/ exactly once no matter how many callers ask
+ * concurrently (the backend rotates + blacklists refresh tokens, so parallel
+ * refreshes would kill each other). Stores the new access token on success.
+ * Also used directly by the AuthProvider bootstrap.
+ */
+export function refreshAccessToken(): Promise<string> {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      try {
+        const data = await apiFetch<{ access: string }>(REFRESH_PATH, {
+          method: 'POST',
+          auth: false,
+        })
+        setAccessToken(data.access)
+        return data.access
+      } finally {
+        refreshPromise = null
+      }
+    })()
+  }
+  return refreshPromise
 }
 
 function buildUrl(path: string, params?: Params): string {
@@ -114,7 +169,7 @@ async function parseBody(res: Response): Promise<unknown> {
 }
 
 export async function apiFetch<T>(path: string, opts: ApiFetchOptions = {}): Promise<T> {
-  const { method = 'GET', body, params, auth = true } = opts
+  const { method = 'GET', body, params, auth = true, _isRetry = false } = opts
 
   const headers: Record<string, string> = { Accept: 'application/json' }
   if (body !== undefined) headers['Content-Type'] = 'application/json'
@@ -128,7 +183,22 @@ export async function apiFetch<T>(path: string, opts: ApiFetchOptions = {}): Pro
   })
 
   const parsed = await parseBody(res)
-  if (!res.ok) throw new ApiError(res.status, parsed)
+  if (!res.ok) {
+    const error = new ApiError(res.status, parsed)
+    const refreshable =
+      res.status === 401 && auth && !_isRetry && path !== REFRESH_PATH
+    if (refreshable) {
+      try {
+        await refreshAccessToken()
+      } catch {
+        clearAccessToken()
+        notifySessionExpired()
+        throw error
+      }
+      return apiFetch<T>(path, { ...opts, _isRetry: true })
+    }
+    throw error
+  }
   return parsed as T
 }
 
