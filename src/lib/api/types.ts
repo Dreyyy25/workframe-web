@@ -7,17 +7,40 @@ export interface Paginated<T> {
 
 export type SalaryType = 'hourly' | 'monthly' | 'yearly'
 
-/** Mirrors apps/jobs JobPost serializer. FKs are serialized as UUID strings. */
+export type SkillLevel = 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert'
+
+export interface JobTypeRef {
+  id: string
+  job_type_name: string
+}
+
+export interface JobPostCompanyRef {
+  id: string // Company id (NOT the owning user-account id)
+  company_name: string
+  business_stream: BusinessStream
+}
+
+export interface RequiredSkill {
+  id: string
+  skill_set: { id: string; skill_name: string }
+  skill_level: SkillLevel
+  is_required: boolean
+}
+
+/** Mirrors the staging JobPostReadSerializer (list + retrieve, nested). */
 export interface JobPost {
   id: string
-  company: string
-  job_type: string
-  job_location: string
+  company: JobPostCompanyRef
+  job_type: JobTypeRef
+  job_location: JobLocation
+  required_skills: RequiredSkill[]
   job_title: string
   job_description: string
-  salary_min: number | null
-  salary_max: number | null
-  salary_type: SalaryType | null
+  /** Decimal serialized as string, e.g. "120000.00". */
+  salary_min: string | null
+  salary_max: string | null
+  /** "" when unset — never null. */
+  salary_type: SalaryType | ''
   deadline_date: string | null
   is_published: boolean
   is_active: boolean
@@ -113,6 +136,28 @@ export interface CompanyImage {
 export interface CompanyDashboard {
   company: CompanyProfile
   images: CompanyImage[]
+}
+
+export interface PublicCompanyImage {
+  id: string
+  image_url: string
+  created_at: string
+}
+
+/** GET /companies/public/ list item. contact_email/user_account are excluded server-side. */
+export interface PublicCompany {
+  id: string
+  company_name: string
+  business_stream: BusinessStream
+  profile_description: string
+  company_website_url: string
+  status: 'active'
+  open_roles_count: number
+}
+
+/** GET /companies/public/{id}/ — list shape plus images. */
+export interface PublicCompanyDetail extends PublicCompany {
+  images: PublicCompanyImage[]
 }
 
 export interface LoginResponse {

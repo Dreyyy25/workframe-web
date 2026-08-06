@@ -10,8 +10,16 @@
 import { http, HttpResponse } from 'msw'
 import {
   ACCESS_TOKEN,
+  BUSINESS_STREAMS_LIST,
+  JOB_POST_ID,
+  JOB_TYPES_LIST,
+  PUBLIC_COMPANY_ID,
   ROTATED_ACCESS_TOKEN,
   companyDashboard,
+  jobPost,
+  paginated,
+  publicCompany,
+  publicCompanyDetail,
   seekerAccount,
   seekerAuthUser,
   seekerProfile,
@@ -49,6 +57,26 @@ export const handlers = [
   ),
   http.get('*/api/v1/companies/dashboard/:id/', ({ request }) =>
     denyUnlessAuthed(request) ?? HttpResponse.json(companyDashboard()),
+  ),
+  http.get('*/api/v1/jobs/job-posts/', () =>
+    HttpResponse.json(paginated([jobPost()])),
+  ),
+  http.get('*/api/v1/jobs/job-posts/:id/', ({ params }) =>
+    params.id === JOB_POST_ID
+      ? HttpResponse.json(jobPost())
+      : HttpResponse.json({ detail: 'No JobPost matches the given query.' }, { status: 404 }),
+  ),
+  http.get('*/api/v1/jobs/job-types/', () => HttpResponse.json(paginated(JOB_TYPES_LIST))),
+  http.get('*/api/v1/companies/business-streams/', () =>
+    HttpResponse.json(paginated(BUSINESS_STREAMS_LIST)),
+  ),
+  http.get('*/api/v1/companies/public/', () =>
+    HttpResponse.json(paginated([publicCompany()])),
+  ),
+  http.get('*/api/v1/companies/public/:id/', ({ params }) =>
+    params.id === PUBLIC_COMPANY_ID
+      ? HttpResponse.json(publicCompanyDetail())
+      : HttpResponse.json({ detail: 'No Company matches the given query.' }, { status: 404 }),
   ),
 ]
 
