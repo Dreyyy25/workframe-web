@@ -1,26 +1,67 @@
 import { useState } from 'react'
-import { Menu, X } from 'lucide-react'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { FileText, LayoutGrid, LogOut, Menu, Settings, User, X } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { buttonVariants } from '@/components/ui/button'
+import { useAuth } from '@/lib/auth/auth-context'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { Avatar } from '@/components/ui/avatar'
+import {
+  DropdownItem,
+  DropdownLink,
+  DropdownMenu,
+  DropdownSeparator,
+} from '@/components/ui/dropdown-menu'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
 
 const NAV = [
-  { label: 'Find Jobs', href: '#featured' },
-  { label: 'Companies', href: '#' },
-  { label: 'For Employers', href: '#employers' },
+  { label: 'Find Jobs', to: '/jobs' },
+  { label: 'Companies', to: '/companies' },
+  { label: 'For Employers', to: '/for-employers' },
 ]
 
 function Brand() {
   return (
-    <a href="/" className="flex items-center gap-2 font-display text-lg font-extrabold tracking-tight">
+    <Link to="/" className="flex items-center gap-2 font-display text-lg font-extrabold tracking-tight">
       <span className="h-[18px] w-[18px] rounded bg-foreground" aria-hidden="true" />
       WORKFRAME
-    </a>
+    </Link>
   )
+}
+
+function initials(name: string) {
+  return name
+    .split(' ')
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join('')
 }
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false)
+  const { user, isLoading, isSeeker, logout } = useAuth()
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    logout()
+    setOpen(false)
+    navigate('/')
+  }
+
+  // Account-menu destinations, derived once so the desktop dropdown and the
+  // mobile menu can never drift apart (the mobile menu used to omit these).
+  const accountLinks: { to: string; label: string; icon: LucideIcon }[] = isSeeker
+    ? [
+        { to: '/seeker/dashboard', label: 'Dashboard', icon: LayoutGrid },
+        { to: '/seeker/applications', label: 'My applications', icon: FileText },
+        { to: '/seeker/profile', label: 'Profile', icon: User },
+        { to: '/settings', label: 'Settings', icon: Settings },
+      ]
+    : [
+        { to: '/company/dashboard', label: 'Console', icon: LayoutGrid },
+        { to: '/settings', label: 'Settings', icon: Settings },
+      ]
+
   return (
     <header className="sticky top-0 z-40 border-b-2 border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="mx-auto flex h-16 max-w-content items-center justify-between gap-6 px-4 sm:px-6">
@@ -28,24 +69,81 @@ export function SiteHeader() {
 
         <nav aria-label="Primary" className="hidden items-center gap-7 md:flex">
           {NAV.map((item) => (
-            <a
+            <NavLink
               key={item.label}
-              href={item.href}
-              className="text-[15px] font-semibold text-foreground transition-colors hover:text-primary"
+              to={item.to}
+              className={({ isActive }) =>
+                cn(
+                  'text-[15px] font-semibold transition-colors hover:text-primary',
+                  isActive ? 'text-primary' : 'text-foreground',
+                )
+              }
             >
               {item.label}
-            </a>
+            </NavLink>
           ))}
         </nav>
 
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <a href="#" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'hidden sm:inline-flex')}>
-            Log in
-          </a>
-          <a href="#" className={cn(buttonVariants({ variant: 'primary', size: 'sm' }), 'hidden sm:inline-flex')}>
-            Sign up
-          </a>
+
+          {/* While the session bootstrap runs, show neither guest CTAs nor the
+              avatar — a logged-in user reloading shouldn't flash "Log in". */}
+          {isLoading && (
+            <span
+              className="hidden h-10 w-10 animate-pulse rounded-[5px] bg-muted sm:block"
+              aria-hidden="true"
+            />
+          )}
+
+          {!isLoading && !user && (
+            <>
+              <Link
+                to="/login"
+                className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'hidden sm:inline-flex')}
+              >
+                Log in
+              </Link>
+              <Link
+                to="/register"
+                className={cn(buttonVariants({ variant: 'primary', size: 'sm' }), 'hidden sm:inline-flex')}
+              >
+                Sign up
+              </Link>
+            </>
+          )}
+
+          {user && (
+            <div className="hidden sm:block">
+              <DropdownMenu
+                trigger={
+                  <button
+                    type="button"
+                    aria-label="Account menu"
+                    className="rounded-[5px] outline-none ring-offset-2 ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <Avatar fallback={initials(user.name)} size={40} />
+                  </button>
+                }
+              >
+                <div className="px-2.5 py-1.5">
+                  <p className="truncate text-sm font-bold">{user.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                </div>
+                <DropdownSeparator />
+                {accountLinks.map(({ to, label, icon: Icon }) => (
+                  <DropdownLink key={to} to={to}>
+                    <Icon /> {label}
+                  </DropdownLink>
+                ))}
+                <DropdownSeparator />
+                <DropdownItem onSelect={handleLogout}>
+                  <LogOut /> Log out
+                </DropdownItem>
+              </DropdownMenu>
+            </div>
+          )}
+
           <button
             type="button"
             aria-label="Menu"
@@ -62,22 +160,54 @@ export function SiteHeader() {
         <div className="border-t-2 border-border bg-background px-4 py-4 md:hidden">
           <nav aria-label="Mobile" className="flex flex-col gap-1">
             {NAV.map((item) => (
-              <a
+              <Link
                 key={item.label}
-                href={item.href}
+                to={item.to}
                 onClick={() => setOpen(false)}
                 className="rounded px-2 py-2.5 text-[15px] font-semibold text-foreground hover:bg-muted"
               >
                 {item.label}
-              </a>
+              </Link>
             ))}
             <div className="mt-2 flex flex-col gap-2">
-              <a href="#" className={cn(buttonVariants({ variant: 'outline' }), 'w-full')}>
-                Log in
-              </a>
-              <a href="#" className={cn(buttonVariants({ variant: 'primary' }), 'w-full')}>
-                Sign up
-              </a>
+              {isLoading ? null : !user ? (
+                <>
+                  <Link
+                    to="/login"
+                    onClick={() => setOpen(false)}
+                    className={cn(buttonVariants({ variant: 'outline' }), 'w-full')}
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    to="/register"
+                    onClick={() => setOpen(false)}
+                    className={cn(buttonVariants({ variant: 'primary' }), 'w-full')}
+                  >
+                    Sign up
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <div className="border-t-2 border-border px-2 pb-1 pt-3">
+                    <p className="truncate text-sm font-bold">{user.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                  </div>
+                  {accountLinks.map(({ to, label, icon: Icon }) => (
+                    <Link
+                      key={to}
+                      to={to}
+                      onClick={() => setOpen(false)}
+                      className="flex items-center gap-2.5 rounded px-2 py-2.5 text-[15px] font-semibold text-foreground hover:bg-muted [&_svg]:h-[18px] [&_svg]:w-[18px] [&_svg]:text-muted-foreground"
+                    >
+                      <Icon /> {label}
+                    </Link>
+                  ))}
+                  <Button variant="outline" onClick={handleLogout} className="mt-1 w-full">
+                    <LogOut className="h-4 w-4" /> Log out
+                  </Button>
+                </>
+              )}
             </div>
           </nav>
         </div>
