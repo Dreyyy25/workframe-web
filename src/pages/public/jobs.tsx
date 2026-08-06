@@ -1,7 +1,8 @@
 import { useSearchParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Search, SlidersHorizontal } from 'lucide-react'
-import { listJobs, listJobTypes, listStreams } from '@/lib/mock/services'
+import { listJobs, listJobTypes, listStreams } from '@/lib/services'
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 import { JobCard } from '@/components/jobs/job-card'
 import { Reveal } from '@/components/motion/reveal'
 import { Button } from '@/components/ui/button'
@@ -36,13 +37,23 @@ export default function Jobs() {
     )
   }
 
-  const { data: types } = useQuery({ queryKey: ['job-types'], queryFn: listJobTypes })
-  const { data: streams } = useQuery({ queryKey: ['streams'], queryFn: listStreams })
+  const debouncedSearch = useDebouncedValue(search)
+
+  const { data: types } = useQuery({
+    queryKey: ['job-types'],
+    queryFn: listJobTypes,
+    staleTime: Infinity,
+  })
+  const { data: streams } = useQuery({
+    queryKey: ['streams'],
+    queryFn: listStreams,
+    staleTime: Infinity,
+  })
   const { data, isLoading } = useQuery({
-    queryKey: ['jobs', { search, type, stream, minSalary, sort, page }],
+    queryKey: ['jobs', { search: debouncedSearch, type, stream, minSalary, sort, page }],
     queryFn: () =>
       listJobs({
-        search: search || undefined,
+        search: debouncedSearch || undefined,
         type: type || undefined,
         stream: stream || undefined,
         minSalary: minSalary ? Number(minSalary) : undefined,
@@ -50,6 +61,7 @@ export default function Jobs() {
         page,
         pageSize: PAGE_SIZE,
       }),
+    placeholderData: keepPreviousData,
   })
 
   const pageCount = data ? Math.ceil(data.count / PAGE_SIZE) : 0

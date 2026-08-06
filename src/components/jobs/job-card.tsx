@@ -4,7 +4,7 @@ import { MapPin } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Spotlight, useSpotlight } from '@/components/ui/spotlight'
 import { money, place } from '@/lib/format'
-import type { JobWithCompany } from '@/lib/mock/services'
+import type { JobWithCompany } from '@/lib/services'
 
 /** Role-centric job card used across Browse, Company profile, and dashboards. */
 export const JobCard = forwardRef<HTMLAnchorElement, { job: JobWithCompany }>(({ job }, _ref) => {

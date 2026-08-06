@@ -1,8 +1,9 @@
 import { useSearchParams } from 'react-router-dom'
 import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Briefcase, Building2, Search } from 'lucide-react'
-import { listCompanies, listStreams } from '@/lib/mock/services'
+import { listCompanies, listStreams } from '@/lib/services'
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
 import { Reveal } from '@/components/motion/reveal'
 import { Avatar } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -12,7 +13,7 @@ import { Select } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Spotlight, useSpotlight } from '@/components/ui/spotlight'
-import type { CompanyWithRoles } from '@/lib/mock/services'
+import type { CompanyListItem } from '@/lib/services'
 
 export default function Companies() {
   const [params, setParams] = useSearchParams()
@@ -30,10 +31,18 @@ export default function Companies() {
       { replace: true },
     )
 
-  const { data: streams } = useQuery({ queryKey: ['streams'], queryFn: listStreams })
+  const debouncedSearch = useDebouncedValue(search)
+
+  const { data: streams } = useQuery({
+    queryKey: ['streams'],
+    queryFn: listStreams,
+    staleTime: Infinity,
+  })
   const { data, isLoading } = useQuery({
-    queryKey: ['companies', { search, stream }],
-    queryFn: () => listCompanies({ search: search || undefined, stream: stream || undefined }),
+    queryKey: ['companies', { search: debouncedSearch, stream }],
+    queryFn: () =>
+      listCompanies({ search: debouncedSearch || undefined, stream: stream || undefined }),
+    placeholderData: keepPreviousData,
   })
 
   return (
@@ -96,7 +105,7 @@ export default function Companies() {
   )
 }
 
-function CompanyCard({ company }: { company: CompanyWithRoles }) {
+function CompanyCard({ company }: { company: CompanyListItem }) {
   const { ref, bind } = useSpotlight<HTMLAnchorElement>()
   return (
     <Link
@@ -123,7 +132,7 @@ function CompanyCard({ company }: { company: CompanyWithRoles }) {
         </p>
         <div className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-foreground">
           <Briefcase className="h-4 w-4 text-muted-foreground" />
-          {company.openRoles.length} open {company.openRoles.length === 1 ? 'role' : 'roles'}
+          {company.openRolesCount} open {company.openRolesCount === 1 ? 'role' : 'roles'}
         </div>
       </div>
     </Link>
