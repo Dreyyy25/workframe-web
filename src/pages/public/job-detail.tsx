@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { CalendarClock, Check, MapPin } from 'lucide-react'
-import { getJob, hasApplied } from '@/lib/mock/services'
+import { getJob } from '@/lib/services'
+import { hasApplied } from '@/lib/mock/services' // Slice 3 replaces this
 import { useAuth } from '@/lib/auth/auth-context'
 import { ApplyModal } from '@/components/jobs/apply-modal'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
@@ -76,10 +77,12 @@ export default function JobDetail() {
               <MapPin />
               {place(job.city, job.country)}
             </Badge>
-            <Badge variant="muted">
-              <CalendarClock />
-              Apply by {formatDate(job.deadline)}
-            </Badge>
+            {job.deadline && (
+              <Badge variant="muted">
+                <CalendarClock />
+                Apply by {formatDate(job.deadline)}
+              </Badge>
+            )}
           </div>
 
           <h1 className="mt-4 text-3xl font-extrabold tracking-tightest sm:text-4xl">{job.title}</h1>
@@ -127,7 +130,7 @@ export default function JobDetail() {
               <Row label="Type" value={job.type} />
               <Row label="Location" value={place(job.city, job.country)} />
               <Row label="Posted" value={formatDate(job.posted)} />
-              <Row label="Deadline" value={formatDate(job.deadline)} />
+              {job.deadline && <Row label="Deadline" value={formatDate(job.deadline)} />}
             </dl>
 
             {isCompany ? (

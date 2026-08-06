@@ -1,7 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { ExternalLink } from 'lucide-react'
-import { getCompany } from '@/lib/mock/services'
+import { getCompany, listCompanyRoles } from '@/lib/services'
 import { JobCard } from '@/components/jobs/job-card'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { Avatar } from '@/components/ui/avatar'
@@ -15,6 +15,11 @@ export default function CompanyProfile() {
   const { data: company, isLoading } = useQuery({
     queryKey: ['company', id],
     queryFn: () => getCompany(id),
+  })
+  const { data: roles } = useQuery({
+    queryKey: ['company-roles', id],
+    queryFn: () => listCompanyRoles(id),
+    enabled: Boolean(company),
   })
 
   if (isLoading) {
@@ -95,10 +100,10 @@ export default function CompanyProfile() {
       <h2 className="mt-12 text-xl font-bold tracking-tight">
         Open roles at {company.name}
       </h2>
-      {company.openRoles.length > 0 ? (
+      {(roles ?? []).length > 0 ? (
         <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {company.openRoles.map((job) => (
-            <JobCard key={job.id} job={{ ...job, company }} />
+          {(roles ?? []).map((job) => (
+            <JobCard key={job.id} job={job} />
           ))}
         </div>
       ) : (
