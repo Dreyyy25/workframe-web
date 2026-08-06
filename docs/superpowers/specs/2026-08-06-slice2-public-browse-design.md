@@ -64,9 +64,9 @@ All return Promises; errors other than 404 propagate as `ApiError` to TanStack Q
 
 - `listJobTypes(): Promise<string[]>`, `listStreams(): Promise<string[]>` — names for the selects, from the cached meta fetches (`page_size=100`).
 - `listJobs(filters: JobFilters): Promise<{results: JobWithCompany[]; count: number}>` — param mapping: `search`→`search`, `type` name→`job_type` UUID, `stream` name→`business_stream` UUID, `minSalary`→`salary_floor`, `sort: 'newest'`→`ordering=-created_at`, `'salary'`→`ordering=-salary_rank`, `page`→`page`, `pageSize`→`page_size`. Unknown type/stream name → `{results: [], count: 0}` (no request).
-- `getJob(id): Promise<JobWithCompany | undefined>` — 404 (incl. malformed id) → `undefined`; pages keep their "Role not found" state.
+- `getJob(id): Promise<JobWithCompany | null>` — 404 (incl. malformed id) → `null`; pages keep their "Role not found" state.
 - `listCompanies({search, stream}): Promise<CompanyListItem[]>` — `page_size=100`, blank-named stub rows filtered out, unknown stream name → `[]`.
-- `getCompany(id): Promise<Company | undefined>` — retrieve with images; 404 → `undefined`.
+- `getCompany(id): Promise<Company | null>` — retrieve with images; 404 → `null`.
 - `listCompanyRoles(companyId): Promise<JobWithCompany[]>` — `/jobs/job-posts/?company={id}&page_size=100` (named to avoid colliding with mock's company-console `listCompanyJobs`).
 
 ### 4.4 Adapter mappings

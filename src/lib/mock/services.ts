@@ -21,14 +21,14 @@ import type {
   Sex,
   SkillLevel,
 } from './types'
+import type { JobFilters, JobWithCompany } from '../services/types'
+
+export type { JobFilters, JobWithCompany } from '../services/types'
 
 const delay = (ms = 220) => new Promise((r) => setTimeout(r, ms))
 
 /* ----------------------------- joined shapes ----------------------------- */
 
-export interface JobWithCompany extends Job {
-  company: Company
-}
 export interface CompanyWithRoles extends Company {
   openRoles: Job[]
 }
@@ -40,16 +40,6 @@ export interface ApplicantWithJob extends Applicant {
 }
 export interface CompanyJobRow extends Job {
   applicantCount: number
-}
-
-export interface JobFilters {
-  search?: string
-  type?: string
-  stream?: string
-  minSalary?: number
-  sort?: 'newest' | 'salary'
-  page?: number
-  pageSize?: number
 }
 
 /* -------------------------------- helpers -------------------------------- */

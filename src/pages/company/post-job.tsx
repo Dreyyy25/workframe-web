@@ -16,9 +16,11 @@ import { Select } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
 
-type Form = Omit<JobInput, 'salaryMin' | 'salaryMax'> & {
+type Form = Omit<JobInput, 'salaryMin' | 'salaryMax' | 'salaryType' | 'deadline'> & {
   salaryMin: string
   salaryMax: string
+  salaryType: SalaryType
+  deadline: string
 }
 
 const EMPTY: Form = {
@@ -60,8 +62,8 @@ export default function PostJob() {
         country: existing.country,
         salaryMin: existing.salaryMin?.toString() ?? '',
         salaryMax: existing.salaryMax?.toString() ?? '',
-        salaryType: existing.salaryType,
-        deadline: existing.deadline,
+        salaryType: existing.salaryType ?? 'yearly',
+        deadline: existing.deadline ?? '',
         published: existing.published,
         skills: existing.skills,
         description: existing.description,

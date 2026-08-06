@@ -7,10 +7,19 @@
  * against; when a real API lands we adapt the service layer, not the screens.
  */
 
+export type {
+  Company,
+  CompanyStatus,
+  Job,
+  JobSkill,
+  SalaryType,
+  SkillLevel,
+} from '../services/types'
+
+import type { SkillLevel } from '../services/types'
+
 export type UserType = 'job_seeker' | 'company'
 export type AppStatus = 'pending' | 'reviewed' | 'accepted' | 'rejected' | 'withdrawn'
-export type SalaryType = 'hourly' | 'monthly' | 'yearly'
-export type SkillLevel = 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert'
 export type DegreeType =
   | 'High School'
   | 'Associate'
@@ -19,45 +28,7 @@ export type DegreeType =
   | 'PhD'
   | 'Certificate'
   | 'Diploma'
-export type CompanyStatus = 'active' | 'inactive' | 'suspended'
 export type Sex = 'M' | 'F' | 'Other'
-
-export interface JobSkill {
-  name: string
-  level: SkillLevel
-  required: boolean
-}
-
-export interface Company {
-  id: string
-  name: string
-  stream: string
-  website: string
-  status: CompanyStatus
-  description: string
-  images: string[]
-  /** Short initials shown in the logo tile, e.g. "NL". */
-  logo: string
-}
-
-export interface Job {
-  id: string
-  companyId: string
-  title: string
-  type: string
-  city: string
-  country: string
-  salaryMin: number | null
-  salaryMax: number | null
-  salaryType: SalaryType
-  /** YYYY-MM-DD */
-  deadline: string
-  /** YYYY-MM-DD */
-  posted: string
-  published: boolean
-  skills: JobSkill[]
-  description: string
-}
 
 export interface Education {
   id: string
