@@ -14,6 +14,7 @@ function initials(name: string): string {
   return name
     .trim()
     .split(/\s+/)
+    .filter(Boolean)
     .slice(0, 2)
     .map((w) => w[0]!.toUpperCase())
     .join('')
@@ -50,6 +51,7 @@ export async function listCompanies(
 export async function getCompany(id: string): Promise<Company | null> {
   try {
     const dto = await getPublicCompany(id)
+    if (dto.company_name.trim() === '') return null
     return adaptCompany(dto, dto.images.map((i) => i.image_url))
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) return null

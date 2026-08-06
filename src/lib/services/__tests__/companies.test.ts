@@ -37,6 +37,16 @@ describe('listCompanies', () => {
     expect(rows).toHaveLength(1)
   })
 
+  it('hides whitespace-only named stub companies', async () => {
+    server.use(
+      http.get('*/api/v1/companies/public/', () =>
+        HttpResponse.json(paginated([publicCompany(), publicCompany({ id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', company_name: '   ' })])),
+      ),
+    )
+    const rows = await listCompanies()
+    expect(rows).toHaveLength(1)
+  })
+
   it('passes search/stream params; unknown stream short-circuits to []', async () => {
     const hits: URL[] = []
     server.use(
@@ -63,5 +73,15 @@ describe('getCompany', () => {
 
   it('returns null on 404', async () => {
     expect(await getCompany('00000000-0000-4000-8000-000000000000')).toBeNull()
+  })
+
+  it('returns null for a blank-named stub company', async () => {
+    server.use(
+      http.get('*/api/v1/companies/public/:id/', () =>
+        HttpResponse.json(publicCompanyDetail({ company_name: '' })),
+      ),
+    )
+    const c = await getCompany(PUBLIC_COMPANY_ID)
+    expect(c).toBeNull()
   })
 })
