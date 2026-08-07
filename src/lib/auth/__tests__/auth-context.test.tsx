@@ -100,6 +100,29 @@ describe('bootstrap', () => {
     expect(authHeader).toBeNull()
   })
 
+  it('keeps the session hint after a transient (5xx) refresh failure', async () => {
+    server.use(
+      http.post('*/api/v1/accounts/token/refresh/', () =>
+        HttpResponse.json({ detail: 'Service unavailable' }, { status: 500 }),
+      ),
+    )
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    expect(result.current.user).toBeNull()
+    // A 5xx is not a terminal refresh verdict — the cookie may still be
+    // alive, so the next load must retry the probe instead of treating this
+    // as a fresh guest.
+    expect(localStorage.getItem('wf-session')).toBe('1')
+  })
+
+  it('drops the session hint after a terminal (401) refresh failure', async () => {
+    noSession()
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    expect(result.current.user).toBeNull()
+    expect(localStorage.getItem('wf-session')).toBeNull()
+  })
+
   it('a slow failing bootstrap does not clobber a login that completed meanwhile', async () => {
     server.use(
       http.post('*/api/v1/accounts/token/refresh/', async () => {
@@ -444,5 +467,6 @@ describe('session expiry', () => {
       await apiGet('/protected/').catch(() => undefined)
     })
     await waitFor(() => expect(result.current.user).toBeNull())
+    expect(localStorage.getItem('wf-session')).toBeNull()
   })
 })

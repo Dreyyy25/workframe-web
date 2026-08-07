@@ -4,18 +4,35 @@
  * the password form is a real mutation against /accounts/change-password/ —
  * local mismatch guard, success toast, and the backend's 400 message surfaced
  * verbatim.
+ *
+ * Company accounts have no seeker profile: the profile query must be gated
+ * off (no doomed dashboard call) and only the password card should render.
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { setAccessToken } from '@/lib/api/client'
 import { ACCESS_TOKEN } from '@/test/msw/fixtures'
 import { ToastProvider } from '@/components/ui/toast'
 import Settings from '../settings'
+
+const { useAuthMock } = vi.hoisted(() => ({
+  useAuthMock: vi.fn(() => ({
+    user: { id: 'seeker-1', type: 'job_seeker', name: 'Ava Reyes', email: 'ava@example.com' },
+    isLoading: false,
+    isSeeker: true,
+    isCompany: false,
+    refreshUser: vi.fn(),
+  })),
+}))
+
+vi.mock('@/lib/auth/auth-context', () => ({
+  useAuth: useAuthMock,
+}))
 
 function renderSettings() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -31,7 +48,16 @@ function renderSettings() {
 }
 
 describe('Settings', () => {
-  beforeEach(() => setAccessToken(ACCESS_TOKEN))
+  beforeEach(() => {
+    setAccessToken(ACCESS_TOKEN)
+    useAuthMock.mockReturnValue({
+      user: { id: 'seeker-1', type: 'job_seeker', name: 'Ava Reyes', email: 'ava@example.com' },
+      isLoading: false,
+      isSeeker: true,
+      isCompany: false,
+      refreshUser: vi.fn(),
+    })
+  })
   afterEach(() => localStorage.clear())
 
   it('renders the email field as read-only', async () => {
@@ -112,5 +138,32 @@ describe('Settings', () => {
     await user.click(screen.getByRole('button', { name: 'Change password' }))
 
     expect(await screen.findByText('Incorrect password.')).toBeInTheDocument()
+  })
+
+  it('for a company account, never calls the seeker dashboard and hides the profile form', async () => {
+    useAuthMock.mockReturnValue({
+      user: { id: 'company-1', type: 'company', name: 'Northwind Labs', email: 'team@northwind.dev' },
+      isLoading: false,
+      isSeeker: false,
+      isCompany: true,
+      refreshUser: vi.fn(),
+    })
+    let dashboardHits = 0
+    server.use(
+      http.get('*/api/v1/seekers/dashboard/:id/', () => {
+        dashboardHits += 1
+        return HttpResponse.json({ detail: 'Not found.' }, { status: 404 })
+      }),
+    )
+    renderSettings()
+
+    expect(await screen.findByRole('heading', { name: 'Password' })).toBeInTheDocument()
+    expect(
+      screen.getByText('Profile details are managed from your company profile.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByLabelText('Email')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Contact number')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Save changes' })).not.toBeInTheDocument()
+    expect(dashboardHits).toBe(0)
   })
 })

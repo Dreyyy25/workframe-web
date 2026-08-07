@@ -1,12 +1,13 @@
 /**
  * Seeker applications on real services: row content, withdraw PATCH capture
- * with a success toast, and the error-toast path on a failed withdraw.
+ * with a success toast that invalidates both the list and the detail cache,
+ * and the error-toast path on a failed withdraw.
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { setAccessToken } from '@/lib/api/client'
@@ -16,7 +17,8 @@ import Applications from '../applications'
 
 function renderApplications() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return render(
+  const invalidateSpy = vi.spyOn(client, 'invalidateQueries')
+  const rendered = render(
     <QueryClientProvider client={client}>
       <ToastProvider>
         <MemoryRouter initialEntries={['/seeker/applications']}>
@@ -25,6 +27,7 @@ function renderApplications() {
       </ToastProvider>
     </QueryClientProvider>,
   )
+  return { ...rendered, invalidateSpy }
 }
 
 describe('SeekerApplications', () => {
@@ -39,7 +42,7 @@ describe('SeekerApplications', () => {
     expect(within(row).getByText('Pending')).toBeInTheDocument()
   })
 
-  it('withdraws an application and shows a success toast', async () => {
+  it('withdraws an application, shows a success toast, and invalidates the list and detail caches', async () => {
     const user = userEvent.setup()
     const patches: Array<{ id: string; body: unknown }> = []
     server.use(
@@ -48,12 +51,14 @@ describe('SeekerApplications', () => {
         return HttpResponse.json({ id: APPLICATION_ID, application_status: 'withdrawn' })
       }),
     )
-    renderApplications()
+    const { invalidateSpy } = renderApplications()
 
     await user.click(await screen.findByRole('button', { name: 'Withdraw' }))
 
     expect(await screen.findByText('Application withdrawn')).toBeInTheDocument()
     expect(patches).toEqual([{ id: APPLICATION_ID, body: { application_status: 'withdrawn' } }])
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['applications'] })
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['application', APPLICATION_ID] })
   })
 
   it('shows an error toast when the withdraw request fails', async () => {

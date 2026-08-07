@@ -22,6 +22,7 @@ import {
 } from 'react'
 import type { ReactNode } from 'react'
 import {
+  ApiError,
   SESSION_HINT_KEY,
   clearAccessToken,
   refreshAccessToken,
@@ -118,12 +119,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               user_type: me.user_type,
             })
             if (gen === sessionGen.current) setUser(sessionUser)
-          } catch {
+          } catch (err) {
             if (gen === sessionGen.current) {
               // Don't leave an orphaned access token (refresh ok, /me/ failed)
               // lying around for a "guest" session.
               clearAccessToken()
               setUser(null)
+              // clearAccessToken() also drops the session hint. That's right
+              // when the refresh gave a terminal 401/400 verdict — the cookie
+              // is dead, so treating this as a fresh guest is correct. Any
+              // other failure (network blip, 5xx, 429 throttle, or a /me/
+              // error after a successful refresh) is transient: the cookie
+              // may still be alive, so restore the hint and let the next load
+              // retry the probe instead of silently downgrading to logged-out.
+              if (!(err instanceof ApiError && (err.status === 401 || err.status === 400))) {
+                localStorage.setItem(SESSION_HINT_KEY, '1')
+              }
             }
           } finally {
             setIsLoading(false)

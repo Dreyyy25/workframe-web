@@ -33,8 +33,9 @@ export default function SeekerApplications() {
 
   const withdraw = useMutation({
     mutationFn: (id: string) => withdrawApplication(id),
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
       qc.invalidateQueries({ queryKey: ['applications'] })
+      qc.invalidateQueries({ queryKey: ['application', id] })
       toast('Application withdrawn')
     },
     onError: (err) => toast(err instanceof Error ? err.message : 'Could not withdraw'),
