@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { getSeekerProfile, updateSeekerProfile } from '@/lib/mock/services'
+import { changePassword, getSeekerProfile, updateSeekerProfile } from '@/lib/services'
+import type { Sex } from '@/lib/services'
 import { ENUMS } from '@/lib/mock/data'
-import type { Sex } from '@/lib/mock/types'
 import { useToast } from '@/components/ui/toast'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -34,7 +34,6 @@ export default function Settings() {
   const saveAccount = useMutation({
     mutationFn: () =>
       updateSeekerProfile({
-        email: account.email,
         contact: account.contact,
         dob: account.dob,
         sex: account.sex,
@@ -44,18 +43,28 @@ export default function Settings() {
       qc.invalidateQueries({ queryKey: ['seeker-profile'] })
       toast('Account updated')
     },
+    onError: (err) => toast(err instanceof Error ? err.message : 'Something went wrong'),
   })
 
-  // password section (local validation only — no backend)
+  // password section
   const [pw, setPw] = useState({ current: '', next: '', confirm: '' })
   const [pwError, setPwError] = useState('')
+
+  const changePw = useMutation({
+    mutationFn: () => changePassword(pw.current, pw.next),
+    onSuccess: () => {
+      setPw({ current: '', next: '', confirm: '' })
+      setPwError('')
+      toast('Password changed')
+    },
+    onError: (err) => setPwError(err instanceof Error ? err.message : 'Could not change password'),
+  })
+
   const submitPassword = (e: React.FormEvent) => {
     e.preventDefault()
-    if (pw.next.length < 10) return setPwError('New password must be at least 10 characters.')
     if (pw.next !== pw.confirm) return setPwError('Passwords don’t match.')
     setPwError('')
-    setPw({ current: '', next: '', confirm: '' })
-    toast('Password changed')
+    changePw.mutate()
   }
 
   if (isLoading) {
@@ -97,12 +106,7 @@ export default function Settings() {
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
             <Label htmlFor="s-email">Email</Label>
-            <Input
-              id="s-email"
-              type="email"
-              value={account.email}
-              onChange={(e) => setAccount((a) => ({ ...a, email: e.target.value }))}
-            />
+            <Input id="s-email" type="email" value={account.email} readOnly disabled />
           </div>
           <div>
             <Label htmlFor="s-contact">Contact number</Label>
@@ -184,7 +188,7 @@ export default function Settings() {
           {pwError && <p className="text-sm font-medium text-destructive">{pwError}</p>}
         </div>
         <div className="mt-6 flex justify-end">
-          <Button type="submit" variant="outline">
+          <Button type="submit" variant="outline" disabled={changePw.isPending}>
             Change password
           </Button>
         </div>

@@ -10,9 +10,10 @@ import {
   deleteSkill,
   getSeekerProfile,
   updateSeekerProfile,
-} from '@/lib/mock/services'
+} from '@/lib/services'
+import type { DegreeType, SeekerProfile, SkillLevel } from '@/lib/services'
 import { ENUMS } from '@/lib/mock/data'
-import type { DegreeType, SeekerProfile, SkillLevel } from '@/lib/mock/types'
+import { useAuth } from '@/lib/auth/auth-context'
 import { useToast } from '@/components/ui/toast'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -85,6 +86,7 @@ export default function SeekerProfilePage() {
 function OverviewTab({ profile }: { profile: SeekerProfile }) {
   const qc = useQueryClient()
   const { toast } = useToast()
+  const { refreshUser } = useAuth()
   const [form, setForm] = useState(profile)
   useEffect(() => setForm(profile), [profile])
 
@@ -100,7 +102,9 @@ function OverviewTab({ profile }: { profile: SeekerProfile }) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['seeker-profile'] })
       toast('Profile updated')
+      void refreshUser()
     },
+    onError: (err) => toast(err instanceof Error ? err.message : 'Something went wrong'),
   })
 
   const set = (k: keyof SeekerProfile, v: string) => setForm((f) => ({ ...f, [k]: v }))
@@ -176,6 +180,7 @@ function EducationTab({ profile }: { profile: SeekerProfile }) {
       setOpen(false)
       setForm({ school: '', degree: 'Bachelor', field: '', start: '', end: '', percentage: '' })
     },
+    onError: (err) => toast(err instanceof Error ? err.message : 'Something went wrong'),
   })
   const remove = useMutation({
     mutationFn: (id: string) => deleteEducation(id),
@@ -183,6 +188,7 @@ function EducationTab({ profile }: { profile: SeekerProfile }) {
       refresh()
       toast('Education removed')
     },
+    onError: (err) => toast(err instanceof Error ? err.message : 'Something went wrong'),
   })
 
   return (
@@ -317,6 +323,7 @@ function ExperienceTab({ profile }: { profile: SeekerProfile }) {
       setOpen(false)
       setForm(empty)
     },
+    onError: (err) => toast(err instanceof Error ? err.message : 'Something went wrong'),
   })
   const remove = useMutation({
     mutationFn: (id: string) => deleteExperience(id),
@@ -324,6 +331,7 @@ function ExperienceTab({ profile }: { profile: SeekerProfile }) {
       refresh()
       toast('Experience removed')
     },
+    onError: (err) => toast(err instanceof Error ? err.message : 'Something went wrong'),
   })
 
   return (
@@ -460,10 +468,12 @@ function SkillsTab({ profile }: { profile: SeekerProfile }) {
       setName('')
       setLevel('Intermediate')
     },
+    onError: (err) => toast(err instanceof Error ? err.message : 'Something went wrong'),
   })
   const remove = useMutation({
     mutationFn: (id: string) => deleteSkill(id),
     onSuccess: refresh,
+    onError: (err) => toast(err instanceof Error ? err.message : 'Something went wrong'),
   })
 
   return (
