@@ -45,20 +45,45 @@ describe('updateSeekerProfile', () => {
     expect(hits).toHaveLength(2)
     const seekerHit = hits.find((h) => h.url.includes('/seekers/'))!
     const meHit = hits.find((h) => h.url.includes('/accounts/me/'))!
+    expect(seekerHit.url).toContain(SEEKER_ID)
     expect(seekerHit.body).toEqual({ first_name: 'Maya' })
     expect(meHit.body).toEqual({ date_of_birth: '1999-01-31', sex: 'F', user_image_url: 'https://p/x.png' })
   })
 
   it('sends only the seeker PATCH when no account fields are present', async () => {
-    const urls: string[] = []
+    const seekerUrls: string[] = []
+    const accountUrls: string[] = []
     server.use(
       http.patch('*/api/v1/seekers/profiles/:id/', ({ request }) => {
-        urls.push(request.url)
+        seekerUrls.push(request.url)
+        return HttpResponse.json({})
+      }),
+      http.patch('*/api/v1/accounts/me/', ({ request }) => {
+        accountUrls.push(request.url)
         return HttpResponse.json({})
       }),
     )
     await updateSeekerProfile({ goals: 'New goals', resumeUrl: '', contact: '+1' })
-    expect(urls).toHaveLength(1)
+    expect(seekerUrls).toHaveLength(1)
+    expect(accountUrls).toHaveLength(0)
+  })
+
+  it('sends only the account PATCH when no profile fields are present', async () => {
+    const seekerUrls: string[] = []
+    const accountUrls: string[] = []
+    server.use(
+      http.patch('*/api/v1/seekers/profiles/:id/', ({ request }) => {
+        seekerUrls.push(request.url)
+        return HttpResponse.json({})
+      }),
+      http.patch('*/api/v1/accounts/me/', ({ request }) => {
+        accountUrls.push(request.url)
+        return HttpResponse.json({})
+      }),
+    )
+    await updateSeekerProfile({ dob: '1999-01-31', sex: 'F' })
+    expect(accountUrls).toHaveLength(1)
+    expect(seekerUrls).toHaveLength(0)
   })
 })
 
