@@ -19,13 +19,25 @@ type Params = Record<string, string | number | boolean | undefined>
 
 let accessToken: string | null = null
 
+/**
+ * Session hint: not the source of truth (the httpOnly refresh cookie is) —
+ * just a localStorage breadcrumb so the AuthProvider bootstrap can tell a
+ * first-time guest (no hint) from a returning session (hint present) before
+ * attempting the silent refresh. A guest skipping the doomed probe means no
+ * network call and no console 401 on an anonymous visit. A stale/wrong hint
+ * only ever costs one wasted probe attempt — it can't grant a false session.
+ */
+export const SESSION_HINT_KEY = 'wf-session'
+
 export function setAccessToken(token: string): void {
   accessToken = token
   sessionExpiredNotified = false
+  localStorage.setItem(SESSION_HINT_KEY, '1')
 }
 
 export function clearAccessToken(): void {
   accessToken = null
+  localStorage.removeItem(SESSION_HINT_KEY)
 }
 
 // --- session-expiry notification -------------------------------------------
