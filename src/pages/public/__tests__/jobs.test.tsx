@@ -55,6 +55,21 @@ describe('Jobs page', () => {
     expect(q.get('salary_floor')).toBe('100000')
   })
 
+  it('guards non-numeric URL params instead of sending them through', async () => {
+    const hits: URL[] = []
+    server.use(
+      http.get('*/api/v1/jobs/job-posts/', ({ request }) => {
+        hits.push(new URL(request.url))
+        return HttpResponse.json(paginated([jobPost()]))
+      }),
+    )
+    renderJobs('/jobs?minSalary=abc&page=zzz')
+    await screen.findByText('Machine Learning Engineer')
+    const q = hits[hits.length - 1]!.searchParams
+    expect(q.get('salary_floor')).toBeNull()
+    expect(q.get('page')).toBe('1')
+  })
+
   it('shows the empty state when nothing matches', async () => {
     server.use(
       http.get('*/api/v1/jobs/job-posts/', () => HttpResponse.json(paginated([]))),

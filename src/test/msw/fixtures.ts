@@ -4,11 +4,16 @@
  * against apps/accounts/views.py, seekers/companies serializers).
  */
 import type {
+  ApplicationReadDto,
   CompanyDashboard,
+  EducationDto,
+  ExperienceDto,
   JobPost,
   PublicCompany,
   PublicCompanyDetail,
+  SeekerDashboard,
   SeekerProfile,
+  SeekerSkillReadDto,
   UserAccount,
 } from '@/lib/api/types'
 
@@ -167,4 +172,67 @@ export function publicCompanyDetail(
 
 export function paginated<T>(results: T[]) {
   return { count: results.length, next: null, previous: null, results }
+}
+
+export const EDUCATION_ID = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd'
+export const EXPERIENCE_ID = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'
+export const SEEKER_SKILL_ID = 'ffffffff-ffff-4fff-8fff-ffffffffffff'
+export const APPLICATION_ID = '12121212-1212-4121-8121-121212121212'
+
+export function educationDto(overrides: Partial<EducationDto> = {}): EducationDto {
+  return {
+    id: EDUCATION_ID, user_account: SEEKER_ID,
+    institute_university_name: 'TU Berlin', degree_type: 'Master',
+    field_of_study: 'Computer Science', academic_details: '',
+    percentage: '85.00', start_date: '2019-09-01', end_date: '2021-07-01',
+    created_at: '2026-08-01T10:00:00Z', updated_at: '2026-08-01T10:00:00Z',
+    ...overrides,
+  }
+}
+
+export function experienceDto(overrides: Partial<ExperienceDto> = {}): ExperienceDto {
+  return {
+    id: EXPERIENCE_ID, user_account: SEEKER_ID,
+    company_name: 'Vertex Data', position: 'ML Engineer',
+    description: 'Built pipelines.', job_location_city: 'Berlin',
+    job_location_country: 'Germany', start_date: '2021-08-01', end_date: null,
+    created_at: '2026-08-01T10:00:00Z', updated_at: '2026-08-01T10:00:00Z',
+    ...overrides,
+  }
+}
+
+export function seekerSkillDto(overrides: Partial<SeekerSkillReadDto> = {}): SeekerSkillReadDto {
+  return {
+    id: SEEKER_SKILL_ID, user_account: SEEKER_ID,
+    skill_set: { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', skill_name: 'Python', created_at: '2026-08-01T10:00:00Z' },
+    skill_level: 'Advanced',
+    ...overrides,
+  }
+}
+
+export function seekerDashboard(overrides: Partial<SeekerDashboard> = {}): SeekerDashboard {
+  return {
+    profile: seekerProfile({ first_name: 'Ava', last_name: 'Reyes', goals: 'Ship ML systems.', contact_details: '+49 111', resume_url: 'https://cv.example/ava.pdf' }),
+    education: [educationDto()],
+    experience: [experienceDto()],
+    skills: [seekerSkillDto()],
+    ...overrides,
+  }
+}
+
+export function applicationDto(overrides: Partial<ApplicationReadDto> = {}): ApplicationReadDto {
+  return {
+    id: APPLICATION_ID, user_account: SEEKER_ID,
+    job_post: {
+      id: JOB_POST_ID, job_title: 'Machine Learning Engineer',
+      company: { id: PUBLIC_COMPANY_ID, company_name: 'Halcyon Systems' },
+      job_type: { id: JOB_TYPE_FULLTIME_ID, job_type_name: 'Full-time' },
+      job_location: { city: 'Berlin', country: 'Germany' },
+      salary_min: '90000.00', salary_max: '120000.00', salary_type: 'yearly',
+      deadline_date: '2026-09-01', is_published: true, is_active: true,
+    },
+    application_date: '2026-08-05T09:30:00Z', application_status: 'pending',
+    cover_letter: 'I love this role.', updated_at: '2026-08-05T09:30:00Z',
+    ...overrides,
+  }
 }

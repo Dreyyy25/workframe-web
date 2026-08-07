@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronRight, Clock, FileText, Search } from 'lucide-react'
-import { listApplications, listJobs } from '@/lib/mock/services'
+import { listApplications, listJobs } from '@/lib/services'
 import { useAuth } from '@/lib/auth/auth-context'
 import { JobCard } from '@/components/jobs/job-card'
 import { StatCard } from '@/components/ui/stat-card'

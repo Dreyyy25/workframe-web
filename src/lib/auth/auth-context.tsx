@@ -22,6 +22,8 @@ import {
 } from 'react'
 import type { ReactNode } from 'react'
 import {
+  ApiError,
+  SESSION_HINT_KEY,
   clearAccessToken,
   refreshAccessToken,
   setAccessToken,
@@ -71,6 +73,7 @@ interface AuthValue {
   login: (email: string, password: string) => Promise<SessionUser>
   register: (input: RegisterFormInput) => Promise<SessionUser>
   logout: () => Promise<void>
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthValue | null>(null)
@@ -99,28 +102,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // would blacklist the second one's cookie mid-flight.
     if (!bootstrapped.current) {
       bootstrapped.current = true
-      void (async () => {
-        const gen = sessionGen.current
-        try {
-          await refreshAccessToken()
-          const me = await authApi.getMe()
-          const sessionUser = await buildSessionUser({
-            id: me.id,
-            email: me.email,
-            user_type: me.user_type,
-          })
-          if (gen === sessionGen.current) setUser(sessionUser)
-        } catch {
-          if (gen === sessionGen.current) {
-            // Don't leave an orphaned access token (refresh ok, /me/ failed)
-            // lying around for a "guest" session.
-            clearAccessToken()
-            setUser(null)
+      // A first-time guest has no session hint: skip the refresh probe
+      // entirely (no doomed network call, no console 401). The httpOnly
+      // cookie stays the source of truth — the hint only gates the attempt.
+      if (!localStorage.getItem(SESSION_HINT_KEY)) {
+        setIsLoading(false)
+      } else {
+        void (async () => {
+          const gen = sessionGen.current
+          try {
+            await refreshAccessToken()
+            const me = await authApi.getMe()
+            const sessionUser = await buildSessionUser({
+              id: me.id,
+              email: me.email,
+              user_type: me.user_type,
+            })
+            if (gen === sessionGen.current) setUser(sessionUser)
+          } catch (err) {
+            if (gen === sessionGen.current) {
+              // Don't leave an orphaned access token (refresh ok, /me/ failed)
+              // lying around for a "guest" session.
+              clearAccessToken()
+              setUser(null)
+              // clearAccessToken() also drops the session hint. That's right
+              // when the refresh gave a terminal 401/400 verdict — the cookie
+              // is dead, so treating this as a fresh guest is correct. Any
+              // other failure (network blip, 5xx, 429 throttle, or a /me/
+              // error after a successful refresh) is transient: the cookie
+              // may still be alive, so restore the hint and let the next load
+              // retry the probe instead of silently downgrading to logged-out.
+              if (!(err instanceof ApiError && (err.status === 401 || err.status === 400))) {
+                localStorage.setItem(SESSION_HINT_KEY, '1')
+              }
+            }
+          } finally {
+            setIsLoading(false)
           }
-        } finally {
-          setIsLoading(false)
-        }
-      })()
+        })()
+      }
     }
 
     return () => setOnSessionExpired(null)
@@ -181,6 +201,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  /**
+   * Re-fetches /me/ + the role profile and rebuilds the session user (e.g.
+   * after a profile edit changes the display name). Mirrors the bootstrap's
+   * sessionGen guard so a stale in-flight call can't clobber newer state.
+   */
+  const refreshUser = useCallback(async () => {
+    const gen = sessionGen.current
+    const me = await authApi.getMe()
+    const sessionUser = await buildSessionUser({
+      id: me.id,
+      email: me.email,
+      user_type: me.user_type,
+    })
+    if (gen === sessionGen.current) setUser(sessionUser)
+  }, [])
+
   const logout = useCallback(async () => {
     // apiFetch captures the Authorization header synchronously, so the local
     // teardown right after dispatch can't strip the token off this request.
@@ -206,8 +242,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       register,
       logout,
+      refreshUser,
     }),
-    [user, isLoading, login, register, logout],
+    [user, isLoading, login, register, logout, refreshUser],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

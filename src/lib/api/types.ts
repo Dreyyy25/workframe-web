@@ -180,3 +180,78 @@ export interface RegisterInput {
   password: string
   user_type: ApiUserType
 }
+
+export interface EducationDto {
+  id: string
+  user_account: string
+  institute_university_name: string
+  degree_type: string
+  field_of_study: string
+  academic_details: string
+  /** decimal string or null */
+  percentage: string | null
+  start_date: string | null
+  end_date: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ExperienceDto {
+  id: string
+  user_account: string
+  company_name: string
+  position: string
+  description: string
+  job_location_city: string
+  job_location_country: string
+  start_date: string | null
+  end_date: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface SeekerSkillReadDto {
+  id: string
+  user_account: string
+  skill_set: { id: string; skill_name: string; created_at: string }
+  skill_level: SkillLevel
+}
+
+/** GET /seekers/dashboard/{userId}/ */
+export interface SeekerDashboard {
+  profile: SeekerProfile
+  education: EducationDto[]
+  experience: ExperienceDto[]
+  skills: SeekerSkillReadDto[]
+}
+
+export interface ApplicationJobPostDto {
+  id: string
+  job_title: string
+  company: { id: string; company_name: string }
+  job_type: { id: string; job_type_name: string }
+  job_location: { city: string; country: string }
+  salary_min: string | null
+  salary_max: string | null
+  salary_type: SalaryType | ''
+  deadline_date: string | null
+  is_published: boolean
+  is_active: boolean
+}
+
+export type ApplicationStatus = 'pending' | 'reviewed' | 'accepted' | 'rejected' | 'withdrawn'
+
+export interface ApplicationReadDto {
+  id: string
+  user_account: string
+  job_post: ApplicationJobPostDto
+  application_date: string
+  application_status: ApplicationStatus
+  cover_letter: string
+  updated_at: string
+}
+
+export interface ApplyResponse {
+  message: string
+  data: { id: string; application_status: ApplicationStatus; application_date: string }
+}

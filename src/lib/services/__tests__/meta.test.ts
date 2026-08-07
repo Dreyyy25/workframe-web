@@ -6,7 +6,6 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import {
-  BUSINESS_STREAMS_LIST,
   JOB_TYPES_LIST,
   JOB_TYPE_FULLTIME_ID,
   STREAM_ID,

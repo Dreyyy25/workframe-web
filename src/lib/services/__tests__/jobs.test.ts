@@ -5,7 +5,14 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
-import { JOB_POST_ID, PUBLIC_COMPANY_ID, jobPost, paginated } from '@/test/msw/fixtures'
+import {
+  JOB_POST_ID,
+  JOB_TYPE_FULLTIME_ID,
+  PUBLIC_COMPANY_ID,
+  STREAM_ID,
+  jobPost,
+  paginated,
+} from '@/test/msw/fixtures'
 import { _resetMetaForTests } from '../meta'
 import { adaptJob, getJob, listCompanyRoles, listJobs } from '../jobs'
 
@@ -59,8 +66,8 @@ describe('listJobs', () => {
     await listJobs({ search: 'ml', type: 'Full-time', stream: 'Data & AI', minSalary: 100000, page: 2, pageSize: 9, sort: 'newest' })
     const q = hits[0].searchParams
     expect(q.get('search')).toBe('ml')
-    expect(q.get('job_type')).toBeTruthy()
-    expect(q.get('business_stream')).toBeTruthy()
+    expect(q.get('job_type')).toBe(JOB_TYPE_FULLTIME_ID)
+    expect(q.get('business_stream')).toBe(STREAM_ID)
     expect(q.get('salary_floor')).toBe('100000')
     expect(q.get('ordering')).toBe('-created_at')
     expect(q.get('page')).toBe('2')
@@ -78,6 +85,14 @@ describe('listJobs', () => {
     const hits: URL[] = []
     captureJobsUrl(hits)
     const out = await listJobs({ type: 'Internship' })
+    expect(out).toEqual({ results: [], count: 0 })
+    expect(hits).toHaveLength(0)
+  })
+
+  it('returns an empty page for an unknown stream name without calling the API', async () => {
+    const hits: URL[] = []
+    captureJobsUrl(hits)
+    const out = await listJobs({ stream: 'Bogus' })
     expect(out).toEqual({ results: [], count: 0 })
     expect(hits).toHaveLength(0)
   })

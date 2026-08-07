@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/toast'
-import { applyToJob } from '@/lib/mock/services'
+import { applyToJob } from '@/lib/services'
 import type { JobWithCompany } from '@/lib/services'
 
 export function ApplyModal({
@@ -28,12 +28,12 @@ export function ApplyModal({
     mutationFn: () => applyToJob(job.id, cover.trim()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['applications'] })
-      qc.invalidateQueries({ queryKey: ['has-applied', job.id] })
       toast(`Application sent to ${job.company?.name ?? 'the company'}`)
       setCover('')
       onApplied?.()
       onClose()
     },
+    onError: (err) => setError(err instanceof Error ? err.message : 'Could not send application'),
   })
 
   const submit = (e: React.FormEvent) => {

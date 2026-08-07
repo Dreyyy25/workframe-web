@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { FileText } from 'lucide-react'
-import { listApplications, withdrawApplication } from '@/lib/mock/services'
+import { listApplications, withdrawApplication } from '@/lib/services'
 import { useToast } from '@/components/ui/toast'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -10,7 +10,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { formatDate } from '@/lib/format'
-import type { AppStatus } from '@/lib/mock/types'
+import type { AppStatus } from '@/lib/services'
 
 const FILTERS: { label: string; value: AppStatus | 'all' }[] = [
   { label: 'All', value: 'all' },
@@ -33,10 +33,12 @@ export default function SeekerApplications() {
 
   const withdraw = useMutation({
     mutationFn: (id: string) => withdrawApplication(id),
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
       qc.invalidateQueries({ queryKey: ['applications'] })
+      qc.invalidateQueries({ queryKey: ['application', id] })
       toast('Application withdrawn')
     },
+    onError: (err) => toast(err instanceof Error ? err.message : 'Could not withdraw'),
   })
 
   const filtered = (apps ?? []).filter((a) => filter === 'all' || a.status === filter)

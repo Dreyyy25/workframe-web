@@ -4,7 +4,7 @@
  */
 import { act, renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { delay, http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import {
@@ -31,7 +31,14 @@ function noSession() {
   )
 }
 
-beforeEach(() => clearAccessToken())
+beforeEach(() => {
+  clearAccessToken()
+  // Existing bootstrap tests below assume the refresh probe always fires,
+  // which now requires the session hint to be present. Tests exercising the
+  // guest (no-hint) path remove it explicitly.
+  localStorage.setItem('wf-session', '1')
+})
+afterEach(() => localStorage.clear())
 
 describe('bootstrap', () => {
   it('hydrates the user from a valid refresh cookie', async () => {
@@ -57,6 +64,22 @@ describe('bootstrap', () => {
     expect(result.current.user).toBeNull()
   })
 
+  it('skips the bootstrap refresh entirely for a first-time guest', async () => {
+    // no session hint in localStorage: the probe must not even fire
+    localStorage.removeItem('wf-session')
+    let refreshHits = 0
+    server.use(
+      http.post('*/api/v1/accounts/token/refresh/', () => {
+        refreshHits += 1
+        return HttpResponse.json({ detail: 'no cookie' }, { status: 401 })
+      }),
+    )
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    expect(result.current.user).toBeNull()
+    expect(refreshHits).toBe(0)
+  })
+
   it('resolves logged-out and clears the access token when /me/ fails after a good refresh', async () => {
     let authHeader: string | null = 'sentinel'
     server.use(
@@ -75,6 +98,29 @@ describe('bootstrap', () => {
     // the token from the successful refresh must not linger for a "guest"
     await apiGet('/echo/')
     expect(authHeader).toBeNull()
+  })
+
+  it('keeps the session hint after a transient (5xx) refresh failure', async () => {
+    server.use(
+      http.post('*/api/v1/accounts/token/refresh/', () =>
+        HttpResponse.json({ detail: 'Service unavailable' }, { status: 500 }),
+      ),
+    )
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    expect(result.current.user).toBeNull()
+    // A 5xx is not a terminal refresh verdict — the cookie may still be
+    // alive, so the next load must retry the probe instead of treating this
+    // as a fresh guest.
+    expect(localStorage.getItem('wf-session')).toBe('1')
+  })
+
+  it('drops the session hint after a terminal (401) refresh failure', async () => {
+    noSession()
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    expect(result.current.user).toBeNull()
+    expect(localStorage.getItem('wf-session')).toBeNull()
   })
 
   it('a slow failing bootstrap does not clobber a login that completed meanwhile', async () => {
@@ -116,6 +162,22 @@ describe('login', () => {
       email: 'ava@example.com',
     })
     expect(result.current.user).toEqual(returned)
+  })
+
+  it('sets the session hint on login and clears it on logout', async () => {
+    noSession()
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+    await act(async () => {
+      await result.current.login('ava@example.com', 'hunter22hunter22')
+    })
+    expect(localStorage.getItem('wf-session')).toBe('1')
+
+    await act(async () => {
+      await result.current.logout()
+    })
+    expect(localStorage.getItem('wf-session')).toBeNull()
   })
 
   it('throws ApiError on bad credentials and leaves the user null', async () => {
@@ -371,6 +433,23 @@ describe('logout', () => {
   })
 })
 
+describe('refreshUser', () => {
+  it('rebuilds the session user from /me/', async () => {
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.user).not.toBeNull())
+
+    server.use(
+      http.get('*/api/v1/seekers/profiles/:id/', () =>
+        HttpResponse.json(seekerProfile({ first_name: 'Maya', last_name: 'Lintang' })),
+      ),
+    )
+    await act(async () => {
+      await result.current.refreshUser()
+    })
+    expect(result.current.user?.name).toBe('Maya Lintang')
+  })
+})
+
 describe('session expiry', () => {
   it('clears the user when an authorized call dies on a failed refresh', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper })
@@ -388,5 +467,6 @@ describe('session expiry', () => {
       await apiGet('/protected/').catch(() => undefined)
     })
     await waitFor(() => expect(result.current.user).toBeNull())
+    expect(localStorage.getItem('wf-session')).toBeNull()
   })
 })

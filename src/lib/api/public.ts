@@ -35,7 +35,12 @@ export function getBusinessStreams() {
   return apiGet<Paginated<BusinessStream>>('/companies/business-streams/', { page_size: 100 })
 }
 
-export function getPublicCompanies(params?: { search?: string; business_stream?: string }) {
+export interface PublicCompanyQuery {
+  search?: string
+  business_stream?: string
+}
+
+export function getPublicCompanies(params?: PublicCompanyQuery) {
   return apiGet<Paginated<PublicCompany>>('/companies/public/', { ...params, page_size: 100 })
 }
 

@@ -37,3 +37,12 @@ export function getMe(): Promise<UserAccount> {
 
 /** Single-flight; shared with the silent-refresh path inside the client. */
 export const refresh = refreshAccessToken
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  await apiPost<void>('/accounts/change-password/', {
+    body: {
+      current_password: currentPassword,
+      new_password: newPassword,
+    },
+  })
+}
