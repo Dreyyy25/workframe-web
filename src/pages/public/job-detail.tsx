@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { CalendarClock, Check, MapPin } from 'lucide-react'
-import { getJob } from '@/lib/services'
-import { hasApplied } from '@/lib/mock/services' // Slice 3 replaces this
+import { getJob, listApplications } from '@/lib/services'
 import { useAuth } from '@/lib/auth/auth-context'
 import { ApplyModal } from '@/components/jobs/apply-modal'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
@@ -21,9 +20,10 @@ export default function JobDetail() {
 
   const { data: job, isLoading } = useQuery({ queryKey: ['job', id], queryFn: () => getJob(id) })
   const { data: applied } = useQuery({
-    queryKey: ['has-applied', id],
-    queryFn: () => hasApplied(id),
+    queryKey: ['applications'],
+    queryFn: listApplications,
     enabled: Boolean(isSeeker && job),
+    select: (apps) => apps.some((a) => a.jobId === id),
   })
 
   if (isLoading) {

@@ -20,9 +20,11 @@ export default function Jobs() {
   const search = params.get('search') ?? ''
   const type = params.get('type') ?? ''
   const stream = params.get('stream') ?? ''
-  const minSalary = params.get('minSalary') ?? ''
+  const minSalaryRaw = Number(params.get('minSalary') ?? '')
+  const minSalary = Number.isFinite(minSalaryRaw) && minSalaryRaw > 0 ? String(minSalaryRaw) : ''
   const sort = (params.get('sort') as 'newest' | 'salary') ?? 'newest'
-  const page = Number(params.get('page') ?? '1')
+  const pageRaw = Number(params.get('page') ?? '1')
+  const page = Number.isFinite(pageRaw) && pageRaw >= 1 ? pageRaw : 1
 
   const setParam = (key: string, value: string) => {
     setParams(
