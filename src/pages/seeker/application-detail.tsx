@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { getApplication } from '@/lib/mock/services'
+import { getApplication } from '@/lib/services'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { cn } from '@/lib/utils'
 import { formatDate, money, place } from '@/lib/format'
-import type { AppStatus } from '@/lib/mock/types'
+import type { AppStatus } from '@/lib/services'
 
 export default function ApplicationDetail() {
   const { id = '' } = useParams()
