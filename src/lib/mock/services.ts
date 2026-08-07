@@ -21,9 +21,9 @@ import type {
   Sex,
   SkillLevel,
 } from './types'
-import type { JobFilters, JobWithCompany } from '../services/types'
+import type { ApplicationWithJob, JobFilters, JobWithCompany } from '../services/types'
 
-export type { JobFilters, JobWithCompany } from '../services/types'
+export type { ApplicationWithJob, JobFilters, JobWithCompany } from '../services/types'
 
 const delay = (ms = 220) => new Promise((r) => setTimeout(r, ms))
 
@@ -31,9 +31,6 @@ const delay = (ms = 220) => new Promise((r) => setTimeout(r, ms))
 
 export interface CompanyWithRoles extends Company {
   openRoles: Job[]
-}
-export interface ApplicationWithJob extends Application {
-  job: JobWithCompany | null
 }
 export interface ApplicantWithJob extends Applicant {
   job: Job | null
