@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { ArrowUpRight, MapPin } from 'lucide-react'
 import { getJobPosts } from '@/lib/api/public'
 import { money } from '@/lib/format'
+import { normalizeSalary } from '@/lib/services/jobs'
 import { SEED_FEATURED, type JobCardData } from '@/lib/seed'
 import { Badge } from '@/components/ui/badge'
 import { Reveal } from '@/components/motion/reveal'
@@ -11,20 +12,19 @@ import { Spotlight, useSpotlight } from '@/components/ui/spotlight'
 
 async function loadFeatured(): Promise<JobCardData[]> {
   const posts = await getJobPosts({ page_size: 6, ordering: '-created_at' })
-  return posts.results.map((p) => ({
-    id: p.id,
-    title: p.job_title,
-    company: p.company.company_name,
-    location: [p.job_location.city, p.job_location.country !== '—' ? p.job_location.country : null]
-      .filter(Boolean)
-      .join(', ') || '—',
-    type: p.job_type.job_type_name,
-    salary: money(
-      p.salary_min == null ? null : Number(p.salary_min),
-      p.salary_max == null ? null : Number(p.salary_max),
-      p.salary_type || null,
-    ),
-  }))
+  return posts.results.map((p) => {
+    const salary = normalizeSalary(p.salary_min, p.salary_max, p.salary_type)
+    return {
+      id: p.id,
+      title: p.job_title,
+      company: p.company.company_name,
+      location: [p.job_location.city, p.job_location.country !== '—' ? p.job_location.country : null]
+        .filter(Boolean)
+        .join(', ') || '—',
+      type: p.job_type.job_type_name,
+      salary: money(salary.min, salary.max, salary.type),
+    }
+  })
 }
 
 function JobCard({ job }: { job: JobCardData }) {

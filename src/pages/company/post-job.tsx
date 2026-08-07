@@ -62,6 +62,7 @@ export default function PostJob() {
         country: existing.country,
         salaryMin: existing.salaryMin?.toString() ?? '',
         salaryMax: existing.salaryMax?.toString() ?? '',
+        // TODO(slice-4): drop these fallbacks when the console moves off mock data — a real null here should surface, not default.
         salaryType: existing.salaryType ?? 'yearly',
         deadline: existing.deadline ?? '',
         published: existing.published,

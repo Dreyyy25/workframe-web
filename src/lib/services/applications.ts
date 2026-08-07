@@ -5,9 +5,8 @@ import {
   getApplicationById, getApplications, patchApplicationStatus, postApply,
 } from '@/lib/api/applications'
 import type { ApplicationJobPostDto, ApplicationReadDto } from '@/lib/api/types'
+import { num } from './adapter-utils'
 import type { Application, ApplicationJob, ApplicationWithJob } from './types'
-
-const num = (v: string | null): number | null => (v == null ? null : Number(v))
 
 function adaptJobSummary(dto: ApplicationJobPostDto): ApplicationJob {
   return {

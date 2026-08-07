@@ -6,12 +6,14 @@
 import { ApiError } from '@/lib/api/client'
 import { getJobPost, getJobPosts } from '@/lib/api/public'
 import type { JobPost } from '@/lib/api/types'
+import { normalizeSalary } from './adapter-utils'
 import { resolveJobTypeId, resolveStreamId } from './meta'
 import type { JobFilters, JobWithCompany } from './types'
 
-const num = (v: string | null): number | null => (v == null ? null : Number(v))
+export { normalizeSalary }
 
 export function adaptJob(dto: JobPost): JobWithCompany {
+  const salary = normalizeSalary(dto.salary_min, dto.salary_max, dto.salary_type)
   return {
     id: dto.id,
     companyId: dto.company.id,
@@ -19,9 +21,9 @@ export function adaptJob(dto: JobPost): JobWithCompany {
     type: dto.job_type.job_type_name,
     city: dto.job_location.city,
     country: dto.job_location.country,
-    salaryMin: num(dto.salary_min),
-    salaryMax: num(dto.salary_max),
-    salaryType: dto.salary_type || null,
+    salaryMin: salary.min,
+    salaryMax: salary.max,
+    salaryType: salary.type,
     deadline: dto.deadline_date,
     posted: dto.created_at.slice(0, 10),
     published: dto.is_published,
@@ -35,17 +37,18 @@ export function adaptJob(dto: JobPost): JobWithCompany {
   }
 }
 
-const EMPTY = { results: [] as JobWithCompany[], count: 0 }
+const EMPTY = Object.freeze({ results: [] as JobWithCompany[], count: 0 })
 
 export async function listJobs(
   filters: JobFilters = {},
 ): Promise<{ results: JobWithCompany[]; count: number }> {
   const { search, type, stream, minSalary, sort = 'newest', page = 1, pageSize = 9 } = filters
 
-  const job_type = type ? await resolveJobTypeId(type) : undefined
-  if (job_type === null) return EMPTY
-  const business_stream = stream ? await resolveStreamId(stream) : undefined
-  if (business_stream === null) return EMPTY
+  const [job_type, business_stream] = await Promise.all([
+    type ? resolveJobTypeId(type) : Promise.resolve(undefined),
+    stream ? resolveStreamId(stream) : Promise.resolve(undefined),
+  ])
+  if (job_type === null || business_stream === null) return EMPTY
 
   const page_ = await getJobPosts({
     search: search || undefined,

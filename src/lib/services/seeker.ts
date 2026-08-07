@@ -70,9 +70,6 @@ export async function getSeekerProfile(): Promise<SeekerProfile> {
   }
 }
 
-const PROFILE_KEYS = ['firstName', 'lastName', 'contact', 'goals', 'resumeUrl'] as const
-const ACCOUNT_KEYS = ['dob', 'sex', 'photo'] as const
-
 export async function updateSeekerProfile(
   patch: Partial<SeekerProfile>,
 ): Promise<Partial<SeekerProfile>> {

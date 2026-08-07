@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { setAccessToken } from '@/lib/api/client'
-import { ACCESS_TOKEN, APPLICATION_ID, JOB_POST_ID, PUBLIC_COMPANY_ID, SEEKER_ID, applicationDto, paginated } from '@/test/msw/fixtures'
+import { ACCESS_TOKEN, APPLICATION_ID, JOB_POST_ID, PUBLIC_COMPANY_ID, SEEKER_ID } from '@/test/msw/fixtures'
 import { applyToJob, getApplication, listApplications, withdrawApplication } from '../applications'
 
 beforeEach(() => setAccessToken(ACCESS_TOKEN))
