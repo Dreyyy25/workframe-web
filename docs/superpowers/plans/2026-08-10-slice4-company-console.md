@@ -1920,6 +1920,7 @@ git commit -m "feat(company): dashboard and jobs list on real API with derived a
 3. Partial failure (skill POST 500): toast shown, create-mode navigates to `/company/jobs/<id>/edit`.
 4. Field errors: job-post POST 400 `{job_title: ['Too long']}` renders inline at the title input; location POST 400 `{city: ['This field is required.']}` renders at the city input.
 5. City/country inputs are `required`.
+6. Non-field ApiError: job-post POST 500 with a `{detail: 'Server error'}` body → the generic error toast IS shown and no inline field errors appear (`ApiError.fieldErrors` is always assigned — `{}` for detail-shaped bodies — so the handler must check it is non-empty, not merely truthy).
 
 - [ ] **Step 2: Run to verify failure.**
 
@@ -1981,7 +1982,9 @@ const save = useMutation({
       if (!isEdit) navigate(`/company/jobs/${err.jobId}/edit`)
       return
     }
-    if (err instanceof ApiError && err.fieldErrors) {
+    // fieldErrors is ALWAYS assigned ({} for {detail}/{error} bodies) — guard on
+    // non-empty, or every 500/403 dies silently in this branch (cf. auth-errors.ts).
+    if (err instanceof ApiError && Object.keys(err.fieldErrors).length > 0) {
       const map: Record<string, string> = {
         job_title: 'title', job_description: 'description', job_type: 'typeId',
         salary_min: 'salaryMin', salary_max: 'salaryMax', salary_type: 'salaryType',
