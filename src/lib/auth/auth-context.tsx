@@ -65,7 +65,7 @@ export type RegisterFormInput =
       businessStreamId?: string
     }
 
-interface AuthValue {
+export interface AuthValue {
   user: SessionUser | null
   isLoading: boolean
   isSeeker: boolean

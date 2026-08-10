@@ -17,6 +17,8 @@ export interface JobPostQuery {
   ordering?: string
   page?: number
   page_size?: number
+  is_published?: boolean
+  is_active?: boolean
 }
 
 export function getJobPosts(params?: JobPostQuery) {

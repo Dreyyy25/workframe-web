@@ -6,9 +6,12 @@
 import type {
   ApplicationReadDto,
   CompanyDashboard,
+  CompanyImage,
   EducationDto,
   ExperienceDto,
+  JobLocationDto,
   JobPost,
+  JobSkillDto,
   PublicCompany,
   PublicCompanyDetail,
   SeekerDashboard,
@@ -20,6 +23,8 @@ import type {
 export const SEEKER_ID = '11111111-1111-4111-8111-111111111111'
 export const COMPANY_USER_ID = '22222222-2222-4222-8222-222222222222'
 export const COMPANY_PROFILE_ID = '33333333-3333-4333-8333-333333333333'
+/** Alias — `companyDashboard().company.id`. */
+export const COMPANY_ID = COMPANY_PROFILE_ID
 export const STREAM_ID = '44444444-4444-4444-8444-444444444444'
 
 export const ACCESS_TOKEN = 'test-access-token'
@@ -42,6 +47,23 @@ export function seekerAccount(overrides: Partial<UserAccount> = {}): UserAccount
     id: SEEKER_ID,
     email: 'ava@example.com',
     user_type: 'job_seeker',
+    date_of_birth: null,
+    contact_number: '',
+    sex: '',
+    user_image_url: '',
+    is_active: true,
+    last_login: '2026-08-01T10:00:00Z',
+    created_at: '2026-07-01T10:00:00Z',
+    updated_at: '2026-08-01T10:00:00Z',
+    ...overrides,
+  }
+}
+
+export function companyAccount(overrides: Partial<UserAccount> = {}): UserAccount {
+  return {
+    id: COMPANY_USER_ID,
+    email: 'team@northwind.dev',
+    user_type: 'company',
     date_of_birth: null,
     contact_number: '',
     sex: '',
@@ -83,6 +105,7 @@ export function companyDashboard(overrides: Partial<CompanyDashboard> = {}): Com
       updated_at: '2026-08-01T10:00:00Z',
     },
     images: [],
+    stats: { active_posts: 3, total_applications: 12, new_this_week: 4 },
     ...overrides,
   }
 }
@@ -231,8 +254,45 @@ export function applicationDto(overrides: Partial<ApplicationReadDto> = {}): App
       salary_min: '90000.00', salary_max: '120000.00', salary_type: 'yearly',
       deadline_date: '2026-09-01', is_published: true, is_active: true,
     },
+    applicant: { id: SEEKER_ID, first_name: 'Avery', last_name: 'Quinn' },
     application_date: '2026-08-05T09:30:00Z', application_status: 'pending',
     cover_letter: 'I love this role.', updated_at: '2026-08-05T09:30:00Z',
+    ...overrides,
+  }
+}
+
+export const COMPANY_IMAGE_ID = '13131313-1313-4313-8313-131313131313'
+export const JOB_SKILL_ID = '14141414-1414-4414-8414-141414141414'
+
+export function companyImageDto(overrides: Partial<CompanyImage> = {}): CompanyImage {
+  return {
+    id: COMPANY_IMAGE_ID,
+    company: COMPANY_PROFILE_ID,
+    image_url: 'https://img.example/office.jpg',
+    created_at: '2026-08-01T10:00:00Z',
+    ...overrides,
+  }
+}
+
+export function jobLocationDto(overrides: Partial<JobLocationDto> = {}): JobLocationDto {
+  return {
+    id: '99999999-9999-4999-8999-999999999999',
+    street_address: '',
+    city: 'Berlin',
+    country: 'Germany',
+    zip: '',
+    country_code: 'DE',
+    ...overrides,
+  }
+}
+
+export function jobSkillDto(overrides: Partial<JobSkillDto> = {}): JobSkillDto {
+  return {
+    id: JOB_SKILL_ID,
+    job_post: JOB_POST_ID,
+    skill_set: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    skill_level: 'Advanced',
+    is_required: true,
     ...overrides,
   }
 }

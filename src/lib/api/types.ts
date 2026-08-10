@@ -132,10 +132,17 @@ export interface CompanyImage {
   created_at: string
 }
 
+export interface CompanyDashboardStats {
+  active_posts: number
+  total_applications: number
+  new_this_week: number
+}
+
 /** GET /companies/dashboard/{userId}/ */
 export interface CompanyDashboard {
   company: CompanyProfile
   images: CompanyImage[]
+  stats: CompanyDashboardStats
 }
 
 export interface PublicCompanyImage {
@@ -241,10 +248,17 @@ export interface ApplicationJobPostDto {
 
 export type ApplicationStatus = 'pending' | 'reviewed' | 'accepted' | 'rejected' | 'withdrawn'
 
+export interface ApplicationApplicantDto {
+  id: string
+  first_name: string
+  last_name: string
+}
+
 export interface ApplicationReadDto {
   id: string
   user_account: string
   job_post: ApplicationJobPostDto
+  applicant: ApplicationApplicantDto | null
   application_date: string
   application_status: ApplicationStatus
   cover_letter: string
@@ -254,4 +268,37 @@ export interface ApplicationReadDto {
 export interface ApplyResponse {
   message: string
   data: { id: string; application_status: ApplicationStatus; application_date: string }
+}
+
+// ---------------------------------------------------------------------------
+// Company console write DTOs (job posts, job locations, job skills).
+// ---------------------------------------------------------------------------
+
+export interface JobPostWriteBody {
+  job_title: string
+  job_description: string
+  job_type: string
+  job_location: string
+  salary_min: number | null
+  salary_max: number | null
+  salary_type: SalaryType | ''
+  deadline_date: string | null
+  is_published: boolean
+}
+
+export interface JobLocationDto {
+  id: string
+  street_address: string
+  city: string
+  country: string
+  zip: string
+  country_code: string
+}
+
+export interface JobSkillDto {
+  id: string
+  job_post: string
+  skill_set: string
+  skill_level: string
+  is_required: boolean
 }
