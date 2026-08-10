@@ -32,9 +32,12 @@ export function Modal({ open, onClose, title, description, children, footer, cla
     const prevOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     const t = window.setTimeout(() => {
-      const focusable = panelRef.current?.querySelector<HTMLElement>(
-        'input, textarea, select, button',
-      )
+      const panel = panelRef.current
+      if (!panel) return
+      const content = panel.querySelector<HTMLElement>('[data-modal-content]')
+      const focusable =
+        content?.querySelector<HTMLElement>('input, textarea, select, button') ??
+        panel.querySelector<HTMLElement>('input, textarea, select, button')
       focusable?.focus()
     }, 30)
     return () => {
@@ -90,7 +93,7 @@ export function Modal({ open, onClose, title, description, children, footer, cla
             >
               <X className="h-4 w-4" />
             </button>
-            {children}
+            <div data-modal-content>{children}</div>
             {footer && <div className="mt-6 flex justify-end gap-2">{footer}</div>}
           </motion.div>
         </motion.div>
