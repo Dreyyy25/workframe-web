@@ -77,7 +77,11 @@ ENV VITE_API_BASE_URL=/api/v1
 RUN npm run build
 
 # --- Runtime: nginx serving the SPA + /api reverse proxy --------------------
-FROM nginx:stable-alpine
+# PIN THIS TAG (spec §4): resolve the current exact stable version first —
+#   docker run --rm nginx:stable-alpine nginx -v   (prints e.g. nginx/1.28.1)
+# — then write that exact tag below (e.g. nginx:1.28.1-alpine), NOT the
+# floating stable-alpine alias. Reproducible rebuilds require it.
+FROM nginx:1.28.1-alpine
 
 # The official entrypoint renders /etc/nginx/templates/*.template with envsubst
 # (only variables present in the environment are substituted; nginx runtime
@@ -140,6 +144,7 @@ server {
     location /assets/ {
         add_header Cache-Control "public, max-age=31536000, immutable" always;
         add_header X-Content-Type-Options nosniff always;
+        add_header Referrer-Policy same-origin always;
         try_files $uri =404;
     }
 
@@ -289,3 +294,4 @@ Do NOT merge. Report the PR URL.
 - Spec coverage: §3 file list → T1/T2/T3; §4 Dockerfile → T1S3; §5 nginx details (incl. add_header inheritance, envsubst safety, no-Host-override, 90s timeout, healthz, immutable assets) → T1S4; §6 harness + both API_ORIGIN modes + Secure-cookie-on-localhost note → T2; §7 DoD → T1S6 + T2S4/S5; §8 runbook → T3; §9 exclusions honored (no CSP, no full-stack compose, no IaC).
 - No placeholders; all file contents are complete and final.
 - `workframe-web:dev` tag in T1 is local-only; T3's registry tagging is the deploy path.
+- Plan-review fixes applied: nginx base tag pinned per spec §4 (implementer verifies 1.28.1 is still current via the `nginx -v` command and adjusts the exact tag if not); `/assets/` repeats Referrer-Policy (add_header inheritance).
