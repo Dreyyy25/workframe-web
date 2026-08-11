@@ -16,14 +16,19 @@ describe('getCompanyConsole', () => {
   it('flattens dashboard + joins stream name from meta', async () => {
     const dash = companyDashboard()
     const console_ = await getCompanyConsole()
-    expect(console_.companyId).toBe(dash.company.id)
-    expect(console_.name).toBe(dash.company.company_name)
-    expect(console_.streamId).toBe(dash.company.business_stream)
     // fixtures: BUSINESS_STREAMS_LIST contains the dashboard's stream id
     const expected = BUSINESS_STREAMS_LIST.find((s) => s.id === dash.company.business_stream)
-    expect(console_.streamName).toBe(expected ? expected.business_stream_name : null)
-    expect(console_.stats).toEqual({ activePosts: 3, totalApplicants: 12, newThisWeek: 4 })
-    expect(console_.images[0]).toEqual({ id: dash.images[0].id, url: dash.images[0].image_url })
+    expect(console_).toEqual({
+      companyId: dash.company.id,
+      name: dash.company.company_name,
+      streamId: dash.company.business_stream,
+      streamName: expected ? expected.business_stream_name : null,
+      status: dash.company.status,
+      website: dash.company.company_website_url,
+      description: dash.company.profile_description,
+      images: dash.images.map((i) => ({ id: i.id, url: i.image_url })),
+      stats: { activePosts: 3, totalApplicants: 12, newThisWeek: 4 },
+    })
   })
 
   it('streamName null when the meta fetch fails', async () => {

@@ -11,7 +11,9 @@ import {
   STREAM_ID,
   paginated,
 } from '@/test/msw/fixtures'
-import { _resetMetaForTests, listJobTypes, listStreams, resolveJobTypeId, resolveStreamId } from '../meta'
+import {
+  _resetMetaForTests, listJobTypeOptions, listJobTypes, listStreams, resolveJobTypeId, resolveStreamId,
+} from '../meta'
 
 describe('services/meta', () => {
   beforeEach(() => _resetMetaForTests())
@@ -19,6 +21,13 @@ describe('services/meta', () => {
   it('returns job type and stream names', async () => {
     expect(await listJobTypes()).toEqual(['Full-time', 'Contract'])
     expect(await listStreams()).toEqual(['Data & AI', 'Software'])
+  })
+
+  it('returns job type id+name option pairs', async () => {
+    expect(await listJobTypeOptions()).toEqual([
+      { id: JOB_TYPE_FULLTIME_ID, name: 'Full-time' },
+      { id: '77777777-7777-4777-8777-777777777778', name: 'Contract' },
+    ])
   })
 
   it('fetches each meta list once across calls (single-flight cache)', async () => {
