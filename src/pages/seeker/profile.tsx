@@ -12,7 +12,7 @@ import {
   updateSeekerProfile,
 } from '@/lib/services'
 import type { DegreeType, SeekerProfile, SkillLevel } from '@/lib/services'
-import { ENUMS } from '@/lib/mock/data'
+import { DEGREE_TYPES, SKILL_LEVELS } from '@/lib/services/enums'
 import { useAuth } from '@/lib/auth/auth-context'
 import { useToast } from '@/components/ui/toast'
 import { Avatar } from '@/components/ui/avatar'
@@ -246,7 +246,7 @@ function EducationTab({ profile }: { profile: SeekerProfile }) {
                 value={form.degree}
                 onChange={(ev) => setForm((f) => ({ ...f, degree: ev.target.value as DegreeType }))}
               >
-                {ENUMS.degreeType.map((d) => (
+                {DEGREE_TYPES.map((d) => (
                   <option key={d} value={d}>
                     {d}
                   </option>
@@ -525,7 +525,7 @@ function SkillsTab({ profile }: { profile: SeekerProfile }) {
               value={level}
               onChange={(e) => setLevel(e.target.value as SkillLevel)}
             >
-              {ENUMS.skillLevel.map((l) => (
+              {SKILL_LEVELS.map((l) => (
                 <option key={l} value={l}>
                   {l}
                 </option>

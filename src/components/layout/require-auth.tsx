@@ -1,6 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '@/lib/auth/auth-context'
-import type { UserType } from '@/lib/mock/types'
+import type { UserType } from '@/lib/services/types'
 
 /**
  * Route guard. Redirects guests to /login (remembering where they came from).

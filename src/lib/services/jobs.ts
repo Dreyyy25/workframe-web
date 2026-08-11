@@ -58,6 +58,8 @@ export async function listJobs(
     ordering: sort === 'salary' ? '-salary_rank' : '-created_at',
     page,
     page_size: pageSize,
+    is_published: true,
+    is_active: true,
   })
   return { results: page_.results.map(adaptJob), count: page_.count }
 }
@@ -72,6 +74,11 @@ export async function getJob(id: string): Promise<JobWithCompany | null> {
 }
 
 export async function listCompanyRoles(companyId: string): Promise<JobWithCompany[]> {
-  const page = await getJobPosts({ company: companyId, page_size: 100 })
+  const page = await getJobPosts({
+    company: companyId,
+    page_size: 100,
+    is_published: true,
+    is_active: true,
+  })
   return page.results.map(adaptJob)
 }

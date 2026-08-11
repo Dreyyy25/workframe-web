@@ -9,6 +9,7 @@ export type {
   JobWithCompany,
   SalaryType,
   SkillLevel,
+  UserType,
 } from './types'
 export { listJobTypes, listJobTypeOptions, listStreams, listStreamOptions } from './meta'
 export { getJob, listCompanyRoles, listJobs } from './jobs'

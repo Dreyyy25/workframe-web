@@ -59,7 +59,7 @@ export function ConsoleLayout() {
             <Menu className="h-5 w-5" />
           </button>
           <span className="truncate font-display text-sm font-bold tracking-tight">
-            {user?.name ?? 'Northwind Labs'}
+            {user?.name ?? 'Your company'}
           </span>
           <div className="flex items-center gap-2">
             <ThemeToggle />

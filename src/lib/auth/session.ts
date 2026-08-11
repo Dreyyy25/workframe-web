@@ -8,7 +8,7 @@
 import { apiGet } from '@/lib/api/client'
 import { getCompanyDashboard } from '@/lib/api/companies'
 import type { AuthUser, SeekerProfile } from '@/lib/api/types'
-import type { UserType } from '@/lib/mock/types'
+import type { UserType } from '@/lib/services/types'
 
 export interface SessionUser {
   id: string

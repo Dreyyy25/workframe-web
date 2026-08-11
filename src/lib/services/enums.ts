@@ -1,8 +1,8 @@
 /**
  * Form-option enums for the company console (salary type, skill level, sex,
- * degree type). Values copied verbatim from `src/lib/mock/data.ts` `ENUMS` —
- * they match the backend's choices. `appStatus`/`companyStatus` are not
- * carried over here (no surviving consumer for either as an option list).
+ * degree type). Values match the backend's choices. `appStatus`/
+ * `companyStatus` are not carried over here (no surviving consumer for
+ * either as an option list).
  */
 import type { DegreeType, SalaryType, Sex, SkillLevel } from './types'
 

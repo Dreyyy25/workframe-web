@@ -1,17 +1,16 @@
 /**
  * Public-domain view models — the single source of truth consumed by the
- * browse screens. `src/lib/mock/` re-imports these so mock data and the
- * real services layer share one set of shapes.
+ * browse screens and the rest of the services layer.
  *
  * Deliberate deltas from the original mock shapes (see spec §4.2):
  *  - `Job.deadline` and `Job.salaryType` are nullable (backend allows both).
- *  - `JobWithCompany.company` is a light ref — screens only use id + name,
- *    and the mock's full Company object still satisfies it structurally.
+ *  - `JobWithCompany.company` is a light ref — screens only use id + name.
  */
 
 export type SalaryType = 'hourly' | 'monthly' | 'yearly'
 export type SkillLevel = 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert'
 export type CompanyStatus = 'active' | 'inactive' | 'suspended'
+export type UserType = 'job_seeker' | 'company'
 
 export interface JobSkill {
   name: string

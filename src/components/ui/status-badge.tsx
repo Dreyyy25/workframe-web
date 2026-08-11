@@ -1,7 +1,7 @@
 import { Check, Clock, Search, X } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { AppStatus } from '@/lib/mock/types'
+import type { AppStatus } from '@/lib/services'
 
 /**
  * Application / applicant status pill. Status is conveyed by icon + text + color

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { changePassword, getSeekerProfile, updateSeekerProfile } from '@/lib/services'
 import type { Sex } from '@/lib/services'
-import { ENUMS } from '@/lib/mock/data'
+import { SEX_OPTIONS } from '@/lib/services/enums'
 import { useAuth } from '@/lib/auth/auth-context'
 import { useToast } from '@/components/ui/toast'
 import { Avatar } from '@/components/ui/avatar'
@@ -139,7 +139,7 @@ export default function Settings() {
                 value={account.sex}
                 onChange={(e) => setAccount((a) => ({ ...a, sex: e.target.value as Sex }))}
               >
-                {ENUMS.sex.map((s) => (
+                {SEX_OPTIONS.map((s) => (
                   <option key={s} value={s}>
                     {s === 'M' ? 'Male' : s === 'F' ? 'Female' : 'Other'}
                   </option>
