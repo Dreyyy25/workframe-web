@@ -19,9 +19,12 @@ import {
   SEEKER_SKILL_ID,
   applicationDto,
   companyDashboard,
+  companyImageDto,
   educationDto,
   experienceDto,
+  jobLocationDto,
   jobPost,
+  jobSkillDto,
   paginated,
   publicCompany,
   publicCompanyDetail,
@@ -138,6 +141,29 @@ export const handlers = [
       { status: 201 },
     ),
   ),
+  http.patch('*/api/v1/companies/profile/:id/', async ({ request }) =>
+    denyUnlessAuthed(request) ??
+    HttpResponse.json({ ...companyDashboard().company, ...(await request.json()) as object })),
+  http.post('*/api/v1/companies/company-images/', ({ request }) =>
+    denyUnlessAuthed(request) ?? HttpResponse.json(companyImageDto(), { status: 201 })),
+  http.delete('*/api/v1/companies/company-images/:id/', ({ request }) =>
+    denyUnlessAuthed(request) ?? new HttpResponse(null, { status: 204 })),
+  http.post('*/api/v1/jobs/job-posts/', ({ request }) =>
+    denyUnlessAuthed(request) ?? HttpResponse.json(jobPost(), { status: 201 })),
+  http.patch('*/api/v1/jobs/job-posts/:id/', async ({ request }) =>
+    denyUnlessAuthed(request) ??
+    HttpResponse.json({ ...jobPost(), ...(await request.json()) as object })),
+  http.delete('*/api/v1/jobs/job-posts/:id/', ({ request }) =>
+    denyUnlessAuthed(request) ?? new HttpResponse(null, { status: 204 })),
+  http.post('*/api/v1/jobs/job-locations/', ({ request }) =>
+    denyUnlessAuthed(request) ?? HttpResponse.json(jobLocationDto(), { status: 201 })),
+  http.post('*/api/v1/jobs/job-skills/', ({ request }) =>
+    denyUnlessAuthed(request) ?? HttpResponse.json(jobSkillDto(), { status: 201 })),
+  http.patch('*/api/v1/jobs/job-skills/:id/', async ({ request }) =>
+    denyUnlessAuthed(request) ??
+    HttpResponse.json({ ...jobSkillDto(), ...(await request.json()) as object })),
+  http.delete('*/api/v1/jobs/job-skills/:id/', ({ request }) =>
+    denyUnlessAuthed(request) ?? new HttpResponse(null, { status: 204 })),
 ]
 
 /**

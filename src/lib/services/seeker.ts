@@ -19,7 +19,7 @@ const toApiDate = (month: string): string | null => (month ? `${month}-01` : nul
 const toMonth = (date: string | null): string => (date ? date.slice(0, 7) : '')
 const toSex = (v: string): Sex => (v === 'M' || v === 'F' ? v : 'Other')
 
-function adaptEducation(dto: EducationDto): Education {
+export function adaptEducation(dto: EducationDto): Education {
   return {
     id: dto.id,
     school: dto.institute_university_name,
@@ -31,7 +31,7 @@ function adaptEducation(dto: EducationDto): Education {
   }
 }
 
-function adaptExperience(dto: ExperienceDto): Experience {
+export function adaptExperience(dto: ExperienceDto): Experience {
   return {
     id: dto.id,
     company: dto.company_name,
@@ -44,7 +44,7 @@ function adaptExperience(dto: ExperienceDto): Experience {
   }
 }
 
-const adaptSkill = (dto: SeekerSkillReadDto): SeekerSkill => ({
+export const adaptSkill = (dto: SeekerSkillReadDto): SeekerSkill => ({
   id: dto.id,
   name: dto.skill_set.skill_name,
   level: dto.skill_level,

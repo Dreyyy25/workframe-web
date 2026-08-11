@@ -1,17 +1,16 @@
 /**
  * Public-domain view models — the single source of truth consumed by the
- * browse screens. `src/lib/mock/` re-imports these so mock data and the
- * real services layer share one set of shapes.
+ * browse screens and the rest of the services layer.
  *
  * Deliberate deltas from the original mock shapes (see spec §4.2):
  *  - `Job.deadline` and `Job.salaryType` are nullable (backend allows both).
- *  - `JobWithCompany.company` is a light ref — screens only use id + name,
- *    and the mock's full Company object still satisfies it structurally.
+ *  - `JobWithCompany.company` is a light ref — screens only use id + name.
  */
 
 export type SalaryType = 'hourly' | 'monthly' | 'yearly'
 export type SkillLevel = 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert'
 export type CompanyStatus = 'active' | 'inactive' | 'suspended'
+export type UserType = 'job_seeker' | 'company'
 
 export interface JobSkill {
   name: string
@@ -161,4 +160,106 @@ export interface ApplicationJob {
 
 export interface ApplicationWithJob extends Application {
   job: ApplicationJob | null
+  applicant: { id: string; name: string } | null
+}
+
+/** The seeker profile joined onto an applicant-detail view — null when the
+ * seeker's profile/dashboard 404s (deleted account, defensive fallback). */
+export interface ApplicantProfile {
+  name: string
+  goals: string
+  contactDetails: string
+  resumeUrl: string
+  skills: { name: string; level: string }[]
+  education: Education[]
+  experience: Experience[]
+}
+
+/** Composite for the company applicant-detail screen: the application plus
+ * the applying seeker's full profile (or null on the defensive fallback). */
+export interface ApplicantDetail {
+  application: ApplicationWithJob
+  profile: ApplicantProfile | null
+  userId: string
+}
+
+// ---------------------------------------------------------------------------
+// Company console view models (dashboard flatten + profile/image mutations).
+// ---------------------------------------------------------------------------
+
+export interface CompanyConsoleImage {
+  id: string
+  url: string
+}
+
+export interface CompanyConsoleStats {
+  activePosts: number
+  totalApplicants: number
+  newThisWeek: number
+}
+
+export interface CompanyConsole {
+  companyId: string
+  name: string
+  streamId: string
+  streamName: string | null
+  status: CompanyStatus
+  website: string
+  description: string
+  images: CompanyConsoleImage[]
+  stats: CompanyConsoleStats
+}
+
+export interface CompanyProfilePatch {
+  name?: string
+  streamId?: string
+  status?: CompanyStatus
+  website?: string
+  description?: string
+}
+
+// ---------------------------------------------------------------------------
+// Company console job views (list/detail adapters + saveJob composite input).
+// ---------------------------------------------------------------------------
+
+export interface CompanyJobRow {
+  id: string
+  title: string
+  type: string
+  typeId: string
+  city: string
+  country: string
+  salaryMin: number | null
+  salaryMax: number | null
+  salaryType: SalaryType | null
+  deadline: string | null
+  published: boolean
+  active: boolean
+  posted: string
+}
+
+export interface CompanyJobSkillRow {
+  id: string | null
+  name: string
+  level: SkillLevel
+  required: boolean
+}
+
+export interface CompanyJobDetail extends CompanyJobRow {
+  description: string
+  skillRows: CompanyJobSkillRow[]
+}
+
+export interface CompanyJobInput {
+  title: string
+  description: string
+  typeId: string
+  city: string
+  country: string
+  salaryMin: number | null
+  salaryMax: number | null
+  salaryType: SalaryType | null
+  deadline: string | null
+  published: boolean
+  skills: CompanyJobSkillRow[]
 }

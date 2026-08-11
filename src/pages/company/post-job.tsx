@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, Trash2 } from 'lucide-react'
-import { createJob, getCompanyJob, updateJob } from '@/lib/mock/services'
-import type { JobInput } from '@/lib/mock/services'
-import { ENUMS, JOB_TYPES } from '@/lib/mock/data'
-import type { JobSkill, SalaryType, SkillLevel } from '@/lib/mock/types'
+import {
+  JobSaveError, SALARY_TYPES, SKILL_LEVELS, getCompanyJob, listJobTypeOptions, saveJob,
+} from '@/lib/services'
+import type { CompanyJobInput, CompanyJobSkillRow, SalaryType, SkillLevel } from '@/lib/services'
+import { ApiError } from '@/lib/api/client'
 import { useToast } from '@/components/ui/toast'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
@@ -15,26 +16,56 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 
-type Form = Omit<JobInput, 'salaryMin' | 'salaryMax' | 'salaryType' | 'deadline'> & {
+interface Form {
+  title: string
+  description: string
+  typeId: string
+  city: string
+  country: string
   salaryMin: string
   salaryMax: string
-  salaryType: SalaryType
+  salaryType: SalaryType | ''
   deadline: string
+  published: boolean
+  skills: CompanyJobSkillRow[]
 }
 
 const EMPTY: Form = {
   title: '',
-  type: 'Full-time',
+  description: '',
+  typeId: '',
   city: '',
   country: '',
   salaryMin: '',
   salaryMax: '',
-  salaryType: 'yearly',
+  salaryType: '',
   deadline: '',
   published: true,
   skills: [],
-  description: '',
+}
+
+/** DRF field names -> form field names, for mapping ApiError.fieldErrors onto inputs. */
+const FIELD_ERROR_MAP: Record<string, keyof Form> = {
+  job_title: 'title',
+  job_description: 'description',
+  job_type: 'typeId',
+  salary_min: 'salaryMin',
+  salary_max: 'salaryMax',
+  salary_type: 'salaryType',
+  deadline_date: 'deadline',
+  city: 'city',
+  country: 'country',
+}
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null
+  return (
+    <p className="mt-1.5 text-sm font-medium text-destructive" role="alert">
+      {message}
+    </p>
+  )
 }
 
 export default function PostJob() {
@@ -45,6 +76,7 @@ export default function PostJob() {
   const { toast } = useToast()
 
   const [form, setForm] = useState<Form>(EMPTY)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => ({ ...f, [k]: v }))
 
   const { data: existing, isLoading } = useQuery({
@@ -53,52 +85,89 @@ export default function PostJob() {
     enabled: isEdit,
   })
 
+  const { data: jobTypes = [] } = useQuery({
+    queryKey: ['job-type-options'],
+    queryFn: listJobTypeOptions,
+  })
+
   useEffect(() => {
     if (existing) {
       setForm({
         title: existing.title,
-        type: existing.type,
+        description: existing.description,
+        typeId: existing.typeId,
         city: existing.city,
         country: existing.country,
         salaryMin: existing.salaryMin?.toString() ?? '',
         salaryMax: existing.salaryMax?.toString() ?? '',
-        // TODO(slice-4): drop these fallbacks when the console moves off mock data — a real null here should surface, not default.
-        salaryType: existing.salaryType ?? 'yearly',
+        salaryType: existing.salaryType ?? '',
         deadline: existing.deadline ?? '',
         published: existing.published,
-        skills: existing.skills,
-        description: existing.description,
+        skills: existing.skillRows,
       })
     }
   }, [existing])
 
-  const toInput = (): JobInput => ({
+  // Create mode: once job types load, default the empty select to the first option.
+  useEffect(() => {
+    if (!isEdit && !form.typeId && jobTypes.length > 0) {
+      set('typeId', jobTypes[0].id)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEdit, form.typeId, jobTypes])
+
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['company-jobs'] })
+    qc.invalidateQueries({ queryKey: ['company-console'] })
+    if (isEdit) qc.invalidateQueries({ queryKey: ['company-job', id] })
+  }
+
+  const toInput = (): CompanyJobInput => ({
     title: form.title,
-    type: form.type,
+    description: form.description,
+    typeId: form.typeId,
     city: form.city,
-    country: form.country || '—',
+    country: form.country,
     salaryMin: form.salaryMin ? Number(form.salaryMin) : null,
     salaryMax: form.salaryMax ? Number(form.salaryMax) : null,
-    salaryType: form.salaryType,
-    deadline: form.deadline,
+    salaryType: form.salaryType || null,
+    deadline: form.deadline || null,
     published: form.published,
     skills: form.skills.filter((s) => s.name.trim()),
-    description: form.description,
   })
 
   const save = useMutation({
-    mutationFn: () => (isEdit ? updateJob(id as string, toInput()) : createJob(toInput())),
+    mutationFn: () => saveJob(toInput(), isEdit ? existing ?? undefined : undefined),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['company-jobs'] })
-      qc.invalidateQueries({ queryKey: ['company-stats'] })
+      invalidate()
       toast(isEdit ? 'Job updated' : 'Job posted')
       navigate('/company/jobs')
+    },
+    onError: (err) => {
+      if (err instanceof JobSaveError) {
+        invalidate()
+        qc.invalidateQueries({ queryKey: ['company-job', err.jobId] })
+        toast('Job saved, but some skills failed — review and retry')
+        if (!isEdit) navigate(`/company/jobs/${err.jobId}/edit`)
+        return
+      }
+      // fieldErrors is ALWAYS assigned ({} for {detail}/{error} bodies) — guard on
+      // non-empty, or every 500/403 dies silently in this branch.
+      if (err instanceof ApiError && Object.keys(err.fieldErrors).length > 0) {
+        const next: Record<string, string> = {}
+        for (const [k, msgs] of Object.entries(err.fieldErrors)) {
+          next[FIELD_ERROR_MAP[k] ?? k] = Array.isArray(msgs) ? msgs.join(' ') : String(msgs)
+        }
+        setFieldErrors(next)
+        return
+      }
+      toast('Could not save the job — try again')
     },
   })
 
   const addSkillRow = () =>
-    set('skills', [...form.skills, { name: '', level: 'Intermediate', required: true }])
-  const updateSkillRow = (i: number, patch: Partial<JobSkill>) =>
+    set('skills', [...form.skills, { id: null, name: '', level: 'Intermediate', required: true }])
+  const updateSkillRow = (i: number, patch: Partial<CompanyJobSkillRow>) =>
     set(
       'skills',
       form.skills.map((s, idx) => (idx === i ? { ...s, ...patch } : s)),
@@ -108,6 +177,15 @@ export default function PostJob() {
 
   if (isEdit && isLoading) {
     return <Skeleton className="h-96 w-full" />
+  }
+  if (isEdit && existing == null) {
+    return (
+      <EmptyState title="Job not found" description="It may have been removed. Head back to your job posts.">
+        <Link to="/company/jobs">
+          <Button variant="outline">Back to job posts</Button>
+        </Link>
+      </EmptyState>
+    )
   }
 
   return (
@@ -125,6 +203,7 @@ export default function PostJob() {
       <form
         onSubmit={(e) => {
           e.preventDefault()
+          setFieldErrors({})
           save.mutate()
         }}
         className="mt-8 space-y-6"
@@ -134,7 +213,14 @@ export default function PostJob() {
             <Label htmlFor="j-title" required>
               Title
             </Label>
-            <Input id="j-title" value={form.title} onChange={(e) => set('title', e.target.value)} required />
+            <Input
+              id="j-title"
+              value={form.title}
+              onChange={(e) => set('title', e.target.value)}
+              aria-invalid={Boolean(fieldErrors.title)}
+              required
+            />
+            <FieldError message={fieldErrors.title} />
           </div>
           <div className="mt-4">
             <Label htmlFor="j-desc" required>
@@ -145,8 +231,10 @@ export default function PostJob() {
               value={form.description}
               onChange={(e) => set('description', e.target.value)}
               rows={5}
+              aria-invalid={Boolean(fieldErrors.description)}
               required
             />
+            <FieldError message={fieldErrors.description} />
           </div>
         </div>
 
@@ -155,13 +243,14 @@ export default function PostJob() {
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div>
               <Label htmlFor="j-type">Job type</Label>
-              <Select id="j-type" value={form.type} onChange={(e) => set('type', e.target.value)}>
-                {JOB_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
+              <Select id="j-type" value={form.typeId} onChange={(e) => set('typeId', e.target.value)}>
+                {jobTypes.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
                   </option>
                 ))}
               </Select>
+              <FieldError message={fieldErrors.typeId} />
             </div>
             <div>
               <Label htmlFor="j-deadline">Deadline</Label>
@@ -170,19 +259,35 @@ export default function PostJob() {
                 type="date"
                 value={form.deadline}
                 onChange={(e) => set('deadline', e.target.value)}
+                aria-invalid={Boolean(fieldErrors.deadline)}
               />
+              <FieldError message={fieldErrors.deadline} />
             </div>
             <div>
-              <Label htmlFor="j-city">City</Label>
-              <Input id="j-city" value={form.city} onChange={(e) => set('city', e.target.value)} />
+              <Label htmlFor="j-city" required>
+                City
+              </Label>
+              <Input
+                id="j-city"
+                value={form.city}
+                onChange={(e) => set('city', e.target.value)}
+                aria-invalid={Boolean(fieldErrors.city)}
+                required
+              />
+              <FieldError message={fieldErrors.city} />
             </div>
             <div>
-              <Label htmlFor="j-country">Country</Label>
+              <Label htmlFor="j-country" required>
+                Country
+              </Label>
               <Input
                 id="j-country"
                 value={form.country}
                 onChange={(e) => set('country', e.target.value)}
+                aria-invalid={Boolean(fieldErrors.country)}
+                required
               />
+              <FieldError message={fieldErrors.country} />
             </div>
           </div>
         </div>
@@ -197,7 +302,9 @@ export default function PostJob() {
                 type="number"
                 value={form.salaryMin}
                 onChange={(e) => set('salaryMin', e.target.value)}
+                aria-invalid={Boolean(fieldErrors.salaryMin)}
               />
+              <FieldError message={fieldErrors.salaryMin} />
             </div>
             <div>
               <Label htmlFor="j-max">Salary max</Label>
@@ -206,21 +313,25 @@ export default function PostJob() {
                 type="number"
                 value={form.salaryMax}
                 onChange={(e) => set('salaryMax', e.target.value)}
+                aria-invalid={Boolean(fieldErrors.salaryMax)}
               />
+              <FieldError message={fieldErrors.salaryMax} />
             </div>
             <div>
               <Label htmlFor="j-stype">Salary type</Label>
               <Select
                 id="j-stype"
                 value={form.salaryType}
-                onChange={(e) => set('salaryType', e.target.value as SalaryType)}
+                onChange={(e) => set('salaryType', e.target.value as SalaryType | '')}
               >
-                {ENUMS.salaryType.map((s) => (
+                <option value="">Not specified</option>
+                {SALARY_TYPES.map((s) => (
                   <option key={s} value={s}>
                     {s}
                   </option>
                 ))}
               </Select>
+              <FieldError message={fieldErrors.salaryType} />
             </div>
           </div>
         </div>
@@ -237,6 +348,7 @@ export default function PostJob() {
                     id={`sk-${i}`}
                     value={s.name}
                     onChange={(e) => updateSkillRow(i, { name: e.target.value })}
+                    disabled={s.id !== null}
                   />
                 </div>
                 <div className="w-40">
@@ -246,7 +358,7 @@ export default function PostJob() {
                     value={s.level}
                     onChange={(e) => updateSkillRow(i, { level: e.target.value as SkillLevel })}
                   >
-                    {ENUMS.skillLevel.map((l) => (
+                    {SKILL_LEVELS.map((l) => (
                       <option key={l} value={l}>
                         {l}
                       </option>

@@ -6,8 +6,9 @@
  * after registration) falls back to the email.
  */
 import { apiGet } from '@/lib/api/client'
-import type { AuthUser, CompanyDashboard, SeekerProfile } from '@/lib/api/types'
-import type { UserType } from '@/lib/mock/types'
+import { getCompanyDashboard } from '@/lib/api/companies'
+import type { AuthUser, SeekerProfile } from '@/lib/api/types'
+import type { UserType } from '@/lib/services/types'
 
 export interface SessionUser {
   id: string
@@ -21,7 +22,7 @@ async function fetchDisplayName(user: AuthUser): Promise<string> {
     const profile = await apiGet<SeekerProfile>(`/seekers/profiles/${user.id}/`)
     return `${profile.first_name} ${profile.last_name}`.trim()
   }
-  const dashboard = await apiGet<CompanyDashboard>(`/companies/dashboard/${user.id}/`)
+  const dashboard = await getCompanyDashboard(user.id)
   return dashboard.company.company_name.trim()
 }
 

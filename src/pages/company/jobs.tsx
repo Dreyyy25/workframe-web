@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check, Plus, X } from 'lucide-react'
-import { deleteJob, listCompanyJobs, toggleJobPublished } from '@/lib/mock/services'
+import { deleteJob, getCompanyConsole, listApplications, listCompanyJobs, setJobPublished } from '@/lib/services'
+import type { CompanyJobRow } from '@/lib/services'
 import { useToast } from '@/components/ui/toast'
 import { Table, TBody, TD, TH, THead, TR } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
@@ -14,26 +15,33 @@ import { money } from '@/lib/format'
 export default function CompanyJobs() {
   const qc = useQueryClient()
   const { toast } = useToast()
+  const { data: console_ } = useQuery({ queryKey: ['company-console'], queryFn: getCompanyConsole })
+  const companyId = console_?.companyId
   const { data: jobs, isLoading } = useQuery({
     queryKey: ['company-jobs'],
-    queryFn: listCompanyJobs,
+    queryFn: () => listCompanyJobs(companyId as string),
+    enabled: Boolean(companyId),
   })
+  const { data: apps } = useQuery({ queryKey: ['applications'], queryFn: listApplications })
+  const countByJob = new Map<string, number>()
+  for (const a of apps ?? []) countByJob.set(a.jobId, (countByJob.get(a.jobId) ?? 0) + 1)
 
-  const refresh = () => {
+  const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['company-jobs'] })
-    qc.invalidateQueries({ queryKey: ['company-stats'] })
+    qc.invalidateQueries({ queryKey: ['company-console'] })
   }
   const toggle = useMutation({
-    mutationFn: (id: string) => toggleJobPublished(id),
-    onSuccess: (job) => {
-      refresh()
-      toast(job?.published ? 'Post published' : 'Post closed')
+    mutationFn: (j: CompanyJobRow) => setJobPublished(j.id, !j.published),
+    onSuccess: (_d, j) => {
+      invalidate()
+      toast(j.published ? 'Post closed' : 'Post published')
     },
   })
   const remove = useMutation({
     mutationFn: (id: string) => deleteJob(id),
     onSuccess: () => {
-      refresh()
+      invalidate()
+      qc.invalidateQueries({ queryKey: ['applications'] })
       toast('Post deleted')
     },
   })
@@ -79,7 +87,7 @@ export default function CompanyJobs() {
                       to={`/company/applicants?job=${j.id}`}
                       className="font-semibold text-primary hover:underline"
                     >
-                      {j.applicantCount}
+                      {countByJob.get(j.id) ?? 0}
                     </Link>
                   </TD>
                   <TD>
@@ -104,7 +112,7 @@ export default function CompanyJobs() {
                         variant="ghost"
                         size="sm"
                         disabled={toggle.isPending}
-                        onClick={() => toggle.mutate(j.id)}
+                        onClick={() => toggle.mutate(j)}
                       >
                         {j.published ? 'Close' : 'Publish'}
                       </Button>

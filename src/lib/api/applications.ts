@@ -1,8 +1,11 @@
 import { apiGet, apiPatch, apiPost } from './client'
 import type { ApplicationReadDto, ApplicationStatus, ApplyResponse, Paginated } from './types'
 
-export function getApplications() {
-  return apiGet<Paginated<ApplicationReadDto>>('/jobs/job-applications/', { page_size: 100 })
+export function getApplications(params?: { job_post?: string; application_status?: ApplicationStatus }) {
+  return apiGet<Paginated<ApplicationReadDto>>('/jobs/job-applications/', {
+    page_size: 100,
+    ...params,
+  })
 }
 
 export function getApplicationById(id: string) {

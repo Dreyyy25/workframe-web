@@ -1,7 +1,8 @@
 import { Link, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Inbox } from 'lucide-react'
-import { listApplicants, listCompanyJobs, setApplicantStatus } from '@/lib/mock/services'
+import { getCompanyConsole, listApplications, listCompanyJobs, setApplicantStatus } from '@/lib/services'
+import type { AppStatus } from '@/lib/services'
 import { useToast } from '@/components/ui/toast'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -11,7 +12,8 @@ import { StatusBadge } from '@/components/ui/status-badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { formatDate } from '@/lib/format'
-import type { AppStatus } from '@/lib/mock/types'
+
+const canAct = (s: AppStatus) => s === 'pending' || s === 'reviewed'
 
 export default function CompanyApplicants() {
   const [params, setParams] = useSearchParams()
@@ -19,17 +21,21 @@ export default function CompanyApplicants() {
   const qc = useQueryClient()
   const { toast } = useToast()
 
-  const { data: jobs } = useQuery({ queryKey: ['company-jobs'], queryFn: listCompanyJobs })
-  const { data: applicants, isLoading } = useQuery({
-    queryKey: ['applicants', jobId],
-    queryFn: () => listApplicants(jobId || undefined),
+  const { data: console_ } = useQuery({ queryKey: ['company-console'], queryFn: getCompanyConsole })
+  const { data: jobs } = useQuery({
+    queryKey: ['company-jobs'],
+    queryFn: () => listCompanyJobs(console_?.companyId as string),
+    enabled: Boolean(console_?.companyId),
   })
+  const { data: apps, isLoading } = useQuery({ queryKey: ['applications'], queryFn: listApplications })
+  const visible = jobId ? (apps ?? []).filter((a) => a.jobId === jobId) : (apps ?? [])
 
-  const decide = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: AppStatus }) => setApplicantStatus(id, status),
+  const setStatus = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: 'accepted' | 'rejected' }) =>
+      setApplicantStatus(id, status),
     onSuccess: (_d, v) => {
-      qc.invalidateQueries({ queryKey: ['applicants'] })
-      qc.invalidateQueries({ queryKey: ['applicant'] })
+      qc.invalidateQueries({ queryKey: ['applications'] })
+      qc.invalidateQueries({ queryKey: ['application-detail'] })
       toast(v.status === 'accepted' ? 'Applicant accepted' : 'Applicant rejected')
     },
   })
@@ -68,56 +74,55 @@ export default function CompanyApplicants() {
             <Skeleton key={i} className="h-28" />
           ))}
         </div>
-      ) : applicants && applicants.length > 0 ? (
+      ) : visible.length > 0 ? (
         <ul className="mt-8 space-y-3">
-          {applicants.map((a) => {
-            const decided = a.status === 'accepted' || a.status === 'rejected'
-            return (
-              <li
-                key={a.id}
-                className="flex flex-col gap-4 rounded border-2 border-border bg-card p-5 lg:flex-row lg:items-center lg:justify-between"
-              >
-                <div className="min-w-0">
-                  <Link
-                    to={`/company/applicants/${a.id}`}
-                    className="font-display text-lg font-bold tracking-tight hover:text-primary"
-                  >
-                    {a.name}
-                  </Link>
-                  <p className="mt-0.5 text-sm text-muted-foreground">
-                    {a.title} · {a.experienceYears} yrs · Applied {formatDate(a.applied)}
-                  </p>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <Badge variant="muted">{a.job?.title ?? 'Role'}</Badge>
-                    <StatusBadge status={a.status} />
-                  </div>
+          {visible.map((a) => (
+            <li
+              key={a.id}
+              className="flex flex-col gap-4 rounded border-2 border-border bg-card p-5 lg:flex-row lg:items-center lg:justify-between"
+            >
+              <div className="min-w-0">
+                <Link
+                  to={`/company/applicants/${a.id}`}
+                  className="font-display text-lg font-bold tracking-tight hover:text-primary"
+                >
+                  {a.applicant?.name || 'Applicant'}
+                </Link>
+                <p className="mt-0.5 text-sm text-muted-foreground">Applied {formatDate(a.applied)}</p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Badge variant="muted">{a.job?.title ?? 'Role'}</Badge>
+                  <StatusBadge status={a.status} />
                 </div>
-                <div className="flex items-center gap-2">
-                  <Link to={`/company/applicants/${a.id}`}>
-                    <Button variant="outline" size="sm">
-                      View
+              </div>
+              <div className="flex items-center gap-2">
+                <Link to={`/company/applicants/${a.id}`}>
+                  <Button variant="outline" size="sm">
+                    View
+                  </Button>
+                </Link>
+                {a.status !== 'withdrawn' && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={!canAct(a.status) || setStatus.isPending}
+                      onClick={() => setStatus.mutate({ id: a.id, status: 'accepted' })}
+                    >
+                      Accept
                     </Button>
-                  </Link>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={decided || decide.isPending}
-                    onClick={() => decide.mutate({ id: a.id, status: 'accepted' })}
-                  >
-                    Accept
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={decided || decide.isPending}
-                    onClick={() => decide.mutate({ id: a.id, status: 'rejected' })}
-                  >
-                    Reject
-                  </Button>
-                </div>
-              </li>
-            )
-          })}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={!canAct(a.status) || setStatus.isPending}
+                      onClick={() => setStatus.mutate({ id: a.id, status: 'rejected' })}
+                    >
+                      Reject
+                    </Button>
+                  </>
+                )}
+              </div>
+            </li>
+          ))}
         </ul>
       ) : (
         <div className="mt-8">

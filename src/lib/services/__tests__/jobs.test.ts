@@ -81,6 +81,14 @@ describe('listJobs', () => {
     expect(hits[0].searchParams.get('ordering')).toBe('-salary_rank')
   })
 
+  it('pins public browse to published+active posts (spec B8)', async () => {
+    const hits: URL[] = []
+    captureJobsUrl(hits)
+    await listJobs({})
+    expect(hits[0].searchParams.get('is_published')).toBe('true')
+    expect(hits[0].searchParams.get('is_active')).toBe('true')
+  })
+
   it('returns an empty page for an unknown type name without calling the API', async () => {
     const hits: URL[] = []
     captureJobsUrl(hits)
@@ -127,5 +135,13 @@ describe('getJob / listCompanyRoles', () => {
     expect(hits[0].searchParams.get('company')).toBe(PUBLIC_COMPANY_ID)
     expect(hits[0].searchParams.get('page_size')).toBe('100')
     expect(roles[0].company.name).toBe('Halcyon Systems')
+  })
+
+  it('pins the public company-roles view to published+active posts (spec B8)', async () => {
+    const hits: URL[] = []
+    captureJobsUrl(hits)
+    await listCompanyRoles(PUBLIC_COMPANY_ID)
+    expect(hits[0].searchParams.get('is_published')).toBe('true')
+    expect(hits[0].searchParams.get('is_active')).toBe('true')
   })
 })
