@@ -104,7 +104,7 @@ export function companyDashboard(overrides: Partial<CompanyDashboard> = {}): Com
       created_at: '2026-07-01T10:00:00Z',
       updated_at: '2026-08-01T10:00:00Z',
     },
-    images: [],
+    images: [companyImageDto()],
     stats: { active_posts: 3, total_applications: 12, new_this_week: 4 },
     ...overrides,
   }

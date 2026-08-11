@@ -42,6 +42,14 @@ export async function listStreams(): Promise<string[]> {
   return (await fetchStreams()).map((s) => s.name)
 }
 
+export async function listStreamOptions(): Promise<{ id: string; name: string }[]> {
+  return fetchStreams()
+}
+
+export async function listJobTypeOptions(): Promise<{ id: string; name: string }[]> {
+  return fetchJobTypes()
+}
+
 export async function resolveJobTypeId(name: string): Promise<string | null> {
   return (await fetchJobTypes()).find((t) => t.name === name)?.id ?? null
 }

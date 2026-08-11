@@ -162,3 +162,38 @@ export interface ApplicationJob {
 export interface ApplicationWithJob extends Application {
   job: ApplicationJob | null
 }
+
+// ---------------------------------------------------------------------------
+// Company console view models (dashboard flatten + profile/image mutations).
+// ---------------------------------------------------------------------------
+
+export interface CompanyConsoleImage {
+  id: string
+  url: string
+}
+
+export interface CompanyConsoleStats {
+  activePosts: number
+  totalApplicants: number
+  newThisWeek: number
+}
+
+export interface CompanyConsole {
+  companyId: string
+  name: string
+  streamId: string
+  streamName: string | null
+  status: CompanyStatus
+  website: string
+  description: string
+  images: CompanyConsoleImage[]
+  stats: CompanyConsoleStats
+}
+
+export interface CompanyProfilePatch {
+  name?: string
+  streamId?: string
+  status?: CompanyStatus
+  website?: string
+  description?: string
+}
