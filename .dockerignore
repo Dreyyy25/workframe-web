@@ -1,0 +1,16 @@
+node_modules
+dist
+dist-ssr
+.vite
+.git
+.playwright-mcp
+.superpowers
+docs
+coverage
+*.local
+.env
+.env.*
+!.env.example
+Dockerfile
+docker-compose.yml
+DEPLOYMENT.md
