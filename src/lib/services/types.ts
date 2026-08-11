@@ -197,3 +197,49 @@ export interface CompanyProfilePatch {
   website?: string
   description?: string
 }
+
+// ---------------------------------------------------------------------------
+// Company console job views (list/detail adapters + saveJob composite input).
+// ---------------------------------------------------------------------------
+
+export interface CompanyJobRow {
+  id: string
+  title: string
+  type: string
+  typeId: string
+  city: string
+  country: string
+  salaryMin: number | null
+  salaryMax: number | null
+  salaryType: SalaryType | null
+  deadline: string | null
+  published: boolean
+  active: boolean
+  posted: string
+}
+
+export interface CompanyJobSkillRow {
+  id: string | null
+  name: string
+  level: SkillLevel
+  required: boolean
+}
+
+export interface CompanyJobDetail extends CompanyJobRow {
+  description: string
+  skillRows: CompanyJobSkillRow[]
+}
+
+export interface CompanyJobInput {
+  title: string
+  description: string
+  typeId: string
+  city: string
+  country: string
+  salaryMin: number | null
+  salaryMax: number | null
+  salaryType: SalaryType | null
+  deadline: string | null
+  published: boolean
+  skills: CompanyJobSkillRow[]
+}

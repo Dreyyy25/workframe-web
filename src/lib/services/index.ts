@@ -40,6 +40,12 @@ export {
 export type {
   CompanyConsole, CompanyConsoleImage, CompanyConsoleStats, CompanyProfilePatch,
 } from './types'
+export type {
+  CompanyJobDetail, CompanyJobInput, CompanyJobRow, CompanyJobSkillRow,
+} from './types'
 export {
   addCompanyImage, getCompanyConsole, removeCompanyImage, updateCompanyProfile,
+} from './company'
+export {
+  JobSaveError, deleteJob, getCompanyJob, listCompanyJobs, saveJob, setJobPublished,
 } from './company'
