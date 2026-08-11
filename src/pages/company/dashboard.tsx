@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Briefcase, Inbox, Plus, TrendingUp } from 'lucide-react'
-import { getCompanyStats, listApplicants } from '@/lib/mock/services'
+import { getCompanyConsole, listApplications } from '@/lib/services'
 import { StatCard } from '@/components/ui/stat-card'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { Table, TBody, TD, TH, THead, TR } from '@/components/ui/table'
@@ -12,9 +12,10 @@ import { cn } from '@/lib/utils'
 import { formatDate } from '@/lib/format'
 
 export default function CompanyDashboard() {
-  const { data: stats, isLoading } = useQuery({ queryKey: ['company-stats'], queryFn: getCompanyStats })
-  const { data: applicants } = useQuery({ queryKey: ['applicants'], queryFn: () => listApplicants() })
-  const recent = applicants?.slice(0, 5) ?? []
+  const { data: console_, isLoading } = useQuery({ queryKey: ['company-console'], queryFn: getCompanyConsole })
+  const { data: apps } = useQuery({ queryKey: ['applications'], queryFn: listApplications })
+  const stats = console_?.stats
+  const recent = [...(apps ?? [])].sort((a, b) => b.applied.localeCompare(a.applied)).slice(0, 5)
 
   return (
     <div>
@@ -53,7 +54,7 @@ export default function CompanyDashboard() {
             <TBody>
               {recent.map((a) => (
                 <TR key={a.id}>
-                  <TD className="font-semibold">{a.name}</TD>
+                  <TD className="font-semibold">{a.applicant?.name || 'Applicant'}</TD>
                   <TD className="text-muted-foreground">{a.job?.title ?? '—'}</TD>
                   <TD className="text-muted-foreground">{formatDate(a.applied)}</TD>
                   <TD>
