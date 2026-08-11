@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ImagePlus, Plus, Trash2 } from 'lucide-react'
+import { ImagePlus, Plus, ShieldAlert, Trash2 } from 'lucide-react'
 import {
   addCompanyImage,
-  getCompanyProfile,
+  getCompanyConsole,
   removeCompanyImage,
   updateCompanyProfile,
-} from '@/lib/mock/services'
-import { BUSINESS_STREAMS, ENUMS } from '@/lib/mock/data'
-import type { Company, CompanyStatus } from '@/lib/mock/types'
+} from '@/lib/services'
+import type { CompanyStatus } from '@/lib/services'
+import { listStreamOptions } from '@/lib/services/meta'
+import { useAuth } from '@/lib/auth/auth-context'
 import { useToast } from '@/components/ui/toast'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
@@ -19,33 +21,56 @@ import { Modal } from '@/components/ui/modal'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 
+interface ProfileForm {
+  name: string
+  streamId: string
+  status: CompanyStatus
+  website: string
+  description: string
+}
+
 export default function CompanyProfile() {
   const qc = useQueryClient()
   const { toast } = useToast()
-  const { data: company, isLoading } = useQuery({
-    queryKey: ['company-profile'],
-    queryFn: getCompanyProfile,
+  const { refreshUser } = useAuth()
+  const { data: console_, isLoading } = useQuery({
+    queryKey: ['company-console'],
+    queryFn: getCompanyConsole,
   })
+  const { data: streams } = useQuery({ queryKey: ['stream-options'], queryFn: listStreamOptions })
 
-  const [form, setForm] = useState<Company | null>(null)
-  useEffect(() => setForm(company ?? null), [company])
+  const [form, setForm] = useState<ProfileForm | null>(null)
+  useEffect(() => {
+    setForm(
+      console_
+        ? {
+            name: console_.name,
+            streamId: console_.streamId,
+            status: console_.status,
+            website: console_.website,
+            description: console_.description,
+          }
+        : null,
+    )
+  }, [console_])
 
   const [uploadOpen, setUploadOpen] = useState(false)
   const [imageUrl, setImageUrl] = useState('')
 
-  const refresh = () => qc.invalidateQueries({ queryKey: ['company-profile'] })
+  const refresh = () => qc.invalidateQueries({ queryKey: ['company-console'] })
 
   const save = useMutation({
     mutationFn: () =>
-      updateCompanyProfile({
-        name: form?.name,
-        stream: form?.stream,
-        status: form?.status,
-        website: form?.website,
-        description: form?.description,
+      updateCompanyProfile(console_!.companyId, {
+        name: form!.name,
+        streamId: form!.streamId,
+        status: form!.status,
+        website: form!.website,
+        description: form!.description,
       }),
     onSuccess: () => {
       refresh()
+      void refreshUser() // topbar shows the company name — a rename must reach the session
       toast('Company profile saved')
     },
   })
@@ -59,19 +84,21 @@ export default function CompanyProfile() {
     },
   })
   const removeImg = useMutation({
-    mutationFn: (url: string) => removeCompanyImage(url),
+    mutationFn: (imageId: string) => removeCompanyImage(imageId),
     onSuccess: () => {
       refresh()
       toast('Image removed')
     },
   })
 
-  if (isLoading || !form) {
+  if (isLoading || !console_ || !form) {
     return <Skeleton className="h-96 w-full" />
   }
 
-  const set = <K extends keyof Company>(k: K, v: Company[K]) =>
+  const set = <K extends keyof ProfileForm>(k: K, v: ProfileForm[K]) =>
     setForm((f) => (f ? { ...f, [k]: v } : f))
+
+  const suspended = console_.status === 'suspended'
 
   return (
     <div>
@@ -96,27 +123,35 @@ export default function CompanyProfile() {
             <Label htmlFor="c-stream" required>
               Business stream
             </Label>
-            <Select id="c-stream" value={form.stream} onChange={(e) => set('stream', e.target.value)}>
-              {BUSINESS_STREAMS.map((s) => (
-                <option key={s} value={s}>
-                  {s}
+            <Select id="c-stream" value={form.streamId} onChange={(e) => set('streamId', e.target.value)}>
+              {(streams ?? []).map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
                 </option>
               ))}
             </Select>
           </div>
           <div>
-            <Label htmlFor="c-status">Status</Label>
-            <Select
-              id="c-status"
-              value={form.status}
-              onChange={(e) => set('status', e.target.value as CompanyStatus)}
-            >
-              {ENUMS.companyStatus.map((s) => (
-                <option key={s} value={s} className="capitalize">
-                  {s}
-                </option>
-              ))}
-            </Select>
+            <Label>Visibility</Label>
+            {suspended ? (
+              <div className="flex items-center gap-2 rounded border-2 border-warning bg-warning/10 px-3 py-2.5">
+                <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-sm border-[1.5px] border-warning px-2.5 py-1 text-xs font-semibold text-warning">
+                  <ShieldAlert className="h-3 w-3" />
+                  Suspended by admin
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  Contact support to restore your listing.
+                </span>
+              </div>
+            ) : (
+              <label className="mt-3 flex items-center gap-2 text-sm font-medium">
+                <Checkbox
+                  checked={form.status === 'active'}
+                  onChange={(e) => set('status', e.target.checked ? 'active' : 'inactive')}
+                />
+                Visible in the public directory
+              </label>
+            )}
           </div>
           <div>
             <Label htmlFor="c-web">Website</Label>
@@ -147,15 +182,15 @@ export default function CompanyProfile() {
         </Button>
       </div>
 
-      {form.images.length > 0 ? (
+      {console_.images.length > 0 ? (
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {form.images.map((src) => (
-            <figure key={src} className="group relative overflow-hidden rounded border-2 border-border">
-              <img src={src} alt="Workplace" className="aspect-[4/3] w-full object-cover" />
+          {console_.images.map((img) => (
+            <figure key={img.id} className="group relative overflow-hidden rounded border-2 border-border">
+              <img src={img.url} alt="Workplace" className="aspect-[4/3] w-full object-cover" />
               <button
                 type="button"
                 aria-label="Remove image"
-                onClick={() => removeImg.mutate(src)}
+                onClick={() => removeImg.mutate(img.id)}
                 className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded border-2 border-border bg-background text-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
               >
                 <Trash2 className="h-4 w-4" />
