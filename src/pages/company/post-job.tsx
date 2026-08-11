@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, Trash2 } from 'lucide-react'
 import {
@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 
 interface Form {
   title: string
@@ -176,6 +177,15 @@ export default function PostJob() {
 
   if (isEdit && isLoading) {
     return <Skeleton className="h-96 w-full" />
+  }
+  if (isEdit && existing == null) {
+    return (
+      <EmptyState title="Job not found" description="It may have been removed. Head back to your job posts.">
+        <Link to="/company/jobs">
+          <Button variant="outline">Back to job posts</Button>
+        </Link>
+      </EmptyState>
+    )
   }
 
   return (

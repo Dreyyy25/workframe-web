@@ -172,6 +172,17 @@ describe('PostJob', () => {
     await waitFor(() => expect(screen.getByDisplayValue('Data Analyst')).toBeInTheDocument())
   })
 
+  it('edit: unknown job id renders a not-found state instead of an empty create form', async () => {
+    server.use(
+      http.get('*/api/v1/jobs/job-posts/:id/', () =>
+        HttpResponse.json({ detail: 'No JobPost matches the given query.' }, { status: 404 })),
+    )
+    renderPostJob('/company/jobs/unknown-job-id/edit')
+
+    expect(await screen.findByText('Job not found')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Title', lbl)).not.toBeInTheDocument()
+  })
+
   it('field errors: job-post 400 renders at the title input; location 400 renders at the city input', async () => {
     const user = userEvent.setup()
 
