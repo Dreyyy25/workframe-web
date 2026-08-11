@@ -88,10 +88,13 @@ Create a **Web Service → Existing image** pointing at the pushed image.
 
 That's it — `PORT` is injected by Render, not set here.
 
-**The backend needs no new env.** `CORS` never applies because the browser
-only ever sees one origin (the frontend's); the proxy doesn't override the
-`Host` header, so it forwards the backend's own hostname, which already
-matches the backend's `ALLOWED_HOSTS`.
+**The backend needs no new env — it never needs to know this frontend's
+URL.** `CORS` never applies because the browser only ever sees one origin
+(the frontend's); the proxy doesn't override the `Host` header, so it
+forwards the backend's own hostname, which already matches the backend's
+`ALLOWED_HOSTS`. Backend env is documented in one place only: the backend
+repo's own `DEPLOYMENT.md` (which says to leave `CORS_ALLOWED_ORIGINS`
+unset for exactly this reason).
 
 Free-tier cold starts: the first request after the backend has spun down
 takes roughly 30-60s. The proxy's `proxy_read_timeout 90s` absorbs that
