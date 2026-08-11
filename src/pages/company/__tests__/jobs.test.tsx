@@ -83,7 +83,8 @@ describe('CompanyJobs', () => {
 
     const daRow = screen.getByText('Data Analyst').closest('tr')!
     expect(within(daRow).getByText('Contract')).toBeInTheDocument()
-    expect(within(daRow).getByText('Closed')).toBeInTheDocument()
+    expect(within(daRow).getByText('Draft')).toBeInTheDocument()
+    expect(within(daRow).queryByText('Closed')).not.toBeInTheDocument()
     expect(within(daRow).getByText('1')).toBeInTheDocument()
   })
 

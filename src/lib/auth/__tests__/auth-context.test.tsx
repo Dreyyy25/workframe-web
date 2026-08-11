@@ -2,6 +2,7 @@
  * AuthProvider state machine: bootstrap via silent refresh, login/register/
  * logout transitions, and session-expiry handling. All network via MSW.
  */
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -18,8 +19,12 @@ import {
 import { ApiError, apiGet, clearAccessToken } from '@/lib/api/client'
 import { AuthProvider, ProfileSaveError, useAuth } from '../auth-context'
 
+let queryClient: QueryClient
+
 const wrapper = ({ children }: { children: ReactNode }) => (
-  <AuthProvider>{children}</AuthProvider>
+  <QueryClientProvider client={queryClient}>
+    <AuthProvider>{children}</AuthProvider>
+  </QueryClientProvider>
 )
 
 /** Make the bootstrap resolve logged-out (no refresh cookie server-side). */
@@ -37,6 +42,7 @@ beforeEach(() => {
   // which now requires the session hint to be present. Tests exercising the
   // guest (no-hint) path remove it explicitly.
   localStorage.setItem('wf-session', '1')
+  queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 })
 afterEach(() => localStorage.clear())
 
@@ -431,6 +437,23 @@ describe('logout', () => {
     })
     await waitFor(() => expect(result.current.user).toBeNull(), { timeout: 1000 })
   })
+
+  it('clears the query cache so a different account cannot see stale cached data', async () => {
+    server.use(
+      http.post('*/api/v1/accounts/logout/', () => new HttpResponse(null, { status: 205 })),
+    )
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.user).not.toBeNull())
+
+    queryClient.setQueryData(['applications'], [{ id: 'seeded' }])
+    queryClient.setQueryData(['company-console'], { seeded: true })
+    expect(queryClient.getQueryCache().getAll()).toHaveLength(2)
+
+    await act(async () => {
+      await result.current.logout()
+    })
+    expect(queryClient.getQueryCache().getAll()).toHaveLength(0)
+  })
 })
 
 describe('refreshUser', () => {
@@ -468,5 +491,28 @@ describe('session expiry', () => {
     })
     await waitFor(() => expect(result.current.user).toBeNull())
     expect(localStorage.getItem('wf-session')).toBeNull()
+  })
+
+  it('clears the query cache when the session expires', async () => {
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.user).not.toBeNull())
+
+    queryClient.setQueryData(['applications'], [{ id: 'seeded' }])
+    queryClient.setQueryData(['company-console'], { seeded: true })
+    expect(queryClient.getQueryCache().getAll()).toHaveLength(2)
+
+    server.use(
+      http.get('*/api/v1/protected/', () =>
+        HttpResponse.json({ detail: 'Token expired' }, { status: 401 }),
+      ),
+      http.post('*/api/v1/accounts/token/refresh/', () =>
+        HttpResponse.json({ detail: 'Token is blacklisted' }, { status: 401 }),
+      ),
+    )
+    await act(async () => {
+      await apiGet('/protected/').catch(() => undefined)
+    })
+    await waitFor(() => expect(result.current.user).toBeNull())
+    expect(queryClient.getQueryCache().getAll()).toHaveLength(0)
   })
 })

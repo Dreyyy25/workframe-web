@@ -97,7 +97,7 @@ export default function CompanyJobs() {
                       </Badge>
                     ) : (
                       <Badge variant="muted">
-                        <X /> Closed
+                        <X /> Draft
                       </Badge>
                     )}
                   </TD>

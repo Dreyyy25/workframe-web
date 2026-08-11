@@ -21,6 +21,7 @@ import {
   useState,
 } from 'react'
 import type { ReactNode } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   ApiError,
   SESSION_HINT_KEY,
@@ -79,6 +80,7 @@ export interface AuthValue {
 const AuthContext = createContext<AuthValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient()
   const [user, setUser] = useState<SessionUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const bootstrapped = useRef(false)
@@ -95,6 +97,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setOnSessionExpired(() => {
       clearAccessToken()
       setUser(null)
+      // A different account may log in next; stale cached data (applications,
+      // company console, etc.) from this session must not survive it.
+      queryClient.clear()
     })
 
     // The network bootstrap must run once: the backend rotates + blacklists
@@ -144,7 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     return () => setOnSessionExpired(null)
-  }, [])
+  }, [queryClient])
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await authApi.login(email, password)
@@ -226,12 +231,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionGen.current++
     clearAccessToken()
     setUser(null)
+    // The next login may be a different account — stale cached data
+    // (applications, company console, etc.) must not survive into it.
+    queryClient.clear()
     try {
       await request
     } catch {
       // Best effort — the cookie may already be dead; local teardown matters.
     }
-  }, [])
+  }, [queryClient])
 
   const value = useMemo<AuthValue>(
     () => ({
