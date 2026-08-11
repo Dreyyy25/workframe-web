@@ -15,6 +15,8 @@ export { getJob, listCompanyRoles, listJobs } from './jobs'
 export { getCompany, listCompanies } from './companies'
 export type {
   Application,
+  ApplicantDetail,
+  ApplicantProfile,
   ApplicationJob,
   ApplicationWithJob,
   AppStatus,
@@ -31,7 +33,8 @@ export {
   getSeekerProfile, updateSeekerProfile,
 } from './seeker'
 export {
-  applyToJob, getApplication, listApplications, withdrawApplication,
+  applyToJob, getApplicantDetail, getApplication, listApplications,
+  setApplicantStatus, withdrawApplication,
 } from './applications'
 export { changePassword } from '@/lib/api/auth'
 export {

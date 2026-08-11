@@ -173,7 +173,7 @@ export async function listApplications(): Promise<ApplicationWithJob[]> {
   await delay()
   return db.applications.map((a) => {
     const job = db.jobs.find((j) => j.id === a.jobId)
-    return { ...a, job: job ? join(job) : null }
+    return { ...a, job: job ? join(job) : null, applicant: null }
   })
 }
 
@@ -182,7 +182,7 @@ export async function getApplication(id: string): Promise<ApplicationWithJob | n
   const a = db.applications.find((x) => x.id === id)
   if (!a) return null
   const job = db.jobs.find((j) => j.id === a.jobId)
-  return { ...a, job: job ? join(job) : null }
+  return { ...a, job: job ? join(job) : null, applicant: null }
 }
 
 export async function applyToJob(jobId: string, cover: string): Promise<Application> {

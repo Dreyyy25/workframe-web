@@ -161,6 +161,27 @@ export interface ApplicationJob {
 
 export interface ApplicationWithJob extends Application {
   job: ApplicationJob | null
+  applicant: { id: string; name: string } | null
+}
+
+/** The seeker profile joined onto an applicant-detail view — null when the
+ * seeker's profile/dashboard 404s (deleted account, defensive fallback). */
+export interface ApplicantProfile {
+  name: string
+  goals: string
+  contactDetails: string
+  resumeUrl: string
+  skills: { name: string; level: string }[]
+  education: Education[]
+  experience: Experience[]
+}
+
+/** Composite for the company applicant-detail screen: the application plus
+ * the applying seeker's full profile (or null on the defensive fallback). */
+export interface ApplicantDetail {
+  application: ApplicationWithJob
+  profile: ApplicantProfile | null
+  userId: string
 }
 
 // ---------------------------------------------------------------------------
