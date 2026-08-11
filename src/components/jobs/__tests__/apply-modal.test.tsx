@@ -30,15 +30,6 @@ function renderModal(onApplied = vi.fn(), onClose = vi.fn()) {
   return { job, onApplied, onClose, invalidateSpy }
 }
 
-/**
- * Modal auto-focuses its first focusable descendant (the header's Close
- * button, which precedes the form in DOM order) ~30ms after mount. Waiting
- * for that one-shot steal to land before interacting avoids a race where it
- * fires mid-keystroke and swallows part of the typed cover letter.
- */
-async function settleAutofocus() {
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Close' })).toHaveFocus())
-}
 
 describe('ApplyModal', () => {
   beforeEach(() => setAccessToken(ACCESS_TOKEN))
@@ -66,7 +57,7 @@ describe('ApplyModal', () => {
     const onApplied = vi.fn()
     const onClose = vi.fn()
     const { invalidateSpy } = renderModal(onApplied, onClose)
-    await settleAutofocus()
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveFocus())
 
     await user.type(
       screen.getByRole('textbox', { name: /cover letter/i }),
@@ -98,7 +89,7 @@ describe('ApplyModal', () => {
     const onApplied = vi.fn()
     const onClose = vi.fn()
     renderModal(onApplied, onClose)
-    await settleAutofocus()
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveFocus())
 
     await user.type(screen.getByRole('textbox', { name: /cover letter/i }), 'Hi!')
     await user.click(screen.getByRole('button', { name: 'Submit application' }))
