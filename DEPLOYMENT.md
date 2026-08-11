@@ -46,13 +46,31 @@ Local `http://localhost` is treated as a trustworthy origin by browsers, so
 the backend's `Secure` cookie still round-trips on `http://localhost:8080` —
 no extra flag needed to verify locally.
 
-## 3. Tag and push (user-owned)
+## 3. Build and push to Docker Hub (user-owned)
 
-    docker build -t <registry>/<namespace>/workframe-web:<tag> .
-    docker push <registry>/<namespace>/workframe-web:<tag>
+Log in once with your **Docker Hub** account (its username may differ from
+your GitHub username):
 
-Build from a clean checkout of the release branch so the image matches a
-released state.
+    docker login
+
+Build and push — Docker Hub needs no registry prefix (`docker.io` is the
+default), so the image name is just `<dockerhub-username>/workframe-web:<tag>`:
+
+    docker build -t <dockerhub-username>/workframe-web:v1 .
+    docker push <dockerhub-username>/workframe-web:v1
+
+- The Hub repository is created automatically on first push — no dashboard
+  step needed. It defaults to **public**; switch it to private on
+  hub.docker.com if you prefer (the free tier includes one private repo).
+- Use an explicit version tag (`v1`, `v2`, …) per release rather than
+  `latest` — Render redeploys pull whatever the named tag points at, and
+  explicit tags make rollbacks a one-line change.
+- Build from a clean checkout of the release branch so the image matches a
+  released state.
+
+In section 4, reference the image on Render as
+`<dockerhub-username>/workframe-web:<tag>` (or the fully-qualified
+`docker.io/<dockerhub-username>/workframe-web:<tag>` — same thing).
 
 ## 4. Render web service
 
