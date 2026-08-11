@@ -1,0 +1,8 @@
+# Local parity harness: runs the production image on localhost:8080.
+# Copy .env.docker.example -> .env.docker and set API_ORIGIN first.
+services:
+  web:
+    build: .
+    env_file: .env.docker
+    ports:
+      - "8080:80"
