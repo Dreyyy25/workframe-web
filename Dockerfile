@@ -15,10 +15,9 @@ ENV VITE_API_BASE_URL=/api/v1
 RUN npm run build
 
 # --- Runtime: nginx serving the SPA + /api reverse proxy --------------------
-# PIN THIS TAG (spec §4): resolve the current exact stable version first —
-#   docker run --rm nginx:stable-alpine nginx -v   (prints e.g. nginx/1.30.4)
-# — then write that exact tag below (e.g. nginx:1.30.4-alpine), NOT the
-# floating stable-alpine alias. Reproducible rebuilds require it.
+# Pinned nginx runtime (spec §4). To bump: run
+#   docker run --rm nginx:stable-alpine nginx -v
+# and update this tag to the printed version (keep the -alpine suffix).
 FROM nginx:1.30.4-alpine
 
 # The official entrypoint renders /etc/nginx/templates/*.template with envsubst
